@@ -79,6 +79,11 @@ Route::prefix('admin')->group(function () {
     Route::get('/edit/{id}', [AdminController::class, 'edit'])->name('admin.edit');
     Route::post('/update/{id}', [AdminController::class, 'update'])->name('admin.update');
     Route::get('/delete/{id}', [AdminController::class, 'destroy'])->name('admin.delete');
+    // ... rute admin lainnya ...
+
+    // Import JSON
+    Route::get('/import', [AdminController::class, 'import'])->name('admin.import');
+    Route::post('/import', [AdminController::class, 'processImport'])->name('admin.import.process');
 
     // Manajemen Kategori
     Route::get('/categories', [AdminController::class, 'categories'])->name('admin.categories');
