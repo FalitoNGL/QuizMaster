@@ -68,7 +68,11 @@
             
             <div class="flex gap-3">
                 <a href="{{ route('admin.categories') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold shadow-lg flex items-center gap-2 transition transform hover:scale-105">
-                    <i class="fas fa-tags"></i> Kelola Kategori
+                    <i class="fas fa-tags"></i> Kategori
+                </a>
+
+                <a href="{{ route('admin.import') }}" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-bold shadow-lg flex items-center gap-2 transition transform hover:scale-105">
+                    <i class="fas fa-file-upload"></i> Import JSON
                 </a>
 
                 <a href="{{ route('admin.create') }}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold shadow-lg flex items-center gap-2 transition transform hover:scale-105">
