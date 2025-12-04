@@ -12,20 +12,21 @@
 
     <script>tailwind.config = { darkMode: 'class' }</script>
     <style>
+        /* Feedback Visual */
         .correct-answer { background-color: #10b981 !important; border-color: #059669 !important; color: white !important; }
         .wrong-answer { background-color: #ef4444 !important; border-color: #dc2626 !important; color: white !important; opacity: 0.9; }
         .correct-indicator { border: 2px solid #10b981 !important; box-shadow: 0 0 15px rgba(16, 185, 129, 0.5); position: relative; }
         .correct-indicator::after { content: "\f00c"; font-family: "Font Awesome 6 Free"; font-weight: 900; position: absolute; right: 15px; color: #10b981; }
         .disabled-opt { pointer-events: none; opacity: 0.7; }
         
-        /* Animasi */
+        /* Animasi Slide Up untuk Pembahasan */
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .animate-slide-up { animation: slideUp 0.4s ease-out forwards; }
     </style>
 </head>
 <body class="bg-slate-900 text-white min-h-screen font-sans overflow-hidden flex flex-col">
 
-    <!-- HEADER STATUS -->
+    <!-- HEADER STATUS (Skor & Info Room) -->
     <div class="fixed top-0 w-full bg-slate-800/90 backdrop-blur border-b border-slate-700 p-4 z-50 shadow-lg">
         <div class="max-w-5xl mx-auto flex justify-between items-center">
             
@@ -120,7 +121,11 @@
                     </h4>
                     <p id="explanation-text" class="text-sm text-slate-300 mb-2 leading-relaxed"></p>
                     <div id="reference-text" class="text-xs text-slate-500 italic border-t border-slate-800 pt-2"></div>
-                    <div class="mt-2 text-xs text-gray-500 text-right">Lanjut otomatis dalam 3 detik...</div>
+                    
+                    <div class="mt-3 text-right text-xs text-gray-500 flex items-center justify-end gap-2">
+                        <div class="w-4 h-4 border-2 border-gray-500 border-t-white rounded-full animate-spin"></div>
+                        Lanjut otomatis dalam 3 detik...
+                    </div>
                 </div>
             </div>
         </div>
