@@ -10,15 +10,21 @@
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script>tailwind.config = { darkMode: 'class' }</script>
     <style>
-        .glass { background: rgba(30, 41, 59, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .glass { background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
         .correct { background-color: #10b981 !important; border-color: #059669 !important; color: white !important; }
         .wrong { background-color: #ef4444 !important; border-color: #dc2626 !important; color: white !important; opacity: 0.9; }
         .selected { border: 2px solid #3b82f6 !important; background-color: rgba(59, 130, 246, 0.2) !important; }
         .correct-indicator { border: 2px solid #10b981 !important; position: relative; }
         .disabled-opt { pointer-events: none; opacity: 0.8; }
-        button:disabled { cursor: not-allowed; opacity: 0.5; filter: grayscale(100%); }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-up { animation: fadeUp 0.5s ease-out; }
+        button:disabled { cursor: not-allowed; opacity: 0.6; filter: grayscale(100%); }
+        
+        /* Animasi Transisi Halaman */
+        .fade-enter { opacity: 0; transform: translateY(10px); }
+        .fade-enter-active { opacity: 1; transform: translateY(0); transition: all 0.4s ease-out; }
+        .fade-exit { opacity: 1; transform: scale(1); }
+        .fade-exit-active { opacity: 0; transform: scale(0.98); transition: all 0.2s ease-in; }
+
+        /* Badge Pop Animation */
         .badge-pop { animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
     </style>
@@ -27,59 +33,82 @@
     
     <div class="w-full max-w-3xl relative z-10">
         
-        <div class="flex justify-between items-center mb-6 glass p-4 rounded-full shadow-lg bg-white/10">
+        <div class="flex justify-between items-center mb-6 glass p-4 rounded-full shadow-lg bg-white/5">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center border border-slate-500">
+                <div class="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center border border-slate-500 shadow-inner">
                     @if($timer > 0) <i class="fas fa-clock text-yellow-400"></i> @else <i class="fas fa-infinity text-blue-400"></i> @endif
                 </div>
                 <div>
-                    <div class="text-xs text-slate-400">WAKTU</div>
+                    <div class="text-[10px] text-slate-400 font-bold tracking-wider">WAKTU</div>
                     <div id="timer-display" class="font-mono text-xl font-bold">{{ $timer > 0 ? $timer : '∞' }}</div>
                 </div>
             </div>
             <div class="text-right">
-                <div class="text-xs text-slate-400">ESTIMASI SKOR</div>
+                <div class="text-[10px] text-slate-400 font-bold tracking-wider">ESTIMASI SKOR</div>
                 <div id="score-display" class="font-mono text-xl font-bold text-blue-400">0</div>
             </div>
         </div>
 
-        <div id="quiz-card" class="glass rounded-3xl p-8 shadow-2xl relative overflow-hidden bg-slate-800/90">
+        <div id="quiz-card" class="glass rounded-3xl p-8 shadow-2xl relative overflow-hidden bg-slate-800/90 border border-slate-700">
+            
             <div class="mb-6">
-                <span class="inline-block px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold border border-blue-500/30 mb-4">
-                    SOAL <span id="q-number">1</span> / {{ $questions->count() }}
-                </span>
-                
-                <div id="media-container" class="hidden mb-4">
-                    <img id="q-image" class="w-full h-48 object-cover rounded-xl border border-slate-600 mb-2 hidden shadow-md">
-                    <audio id="q-audio" controls class="w-full hidden"></audio>
+                <div class="flex justify-between items-end mb-2">
+                    <span class="inline-block px-3 py-1 rounded-lg bg-blue-500/20 text-blue-300 text-xs font-bold border border-blue-500/30">
+                        SOAL <span id="q-number">1</span> / {{ $questions->count() }}
+                    </span>
+                    <span class="text-xs text-slate-500 font-mono" id="progress-percent">0%</span>
                 </div>
-
-                <h2 id="question-text" class="text-xl md:text-2xl font-bold leading-relaxed text-white">Loading...</h2>
-                <p id="instruction-text" class="text-sm text-slate-400 mt-2 italic border-l-4 border-yellow-500 pl-3"></p>
+                <div class="w-full bg-slate-700/50 h-2 rounded-full overflow-hidden">
+                    <div id="progress-bar" class="bg-gradient-to-r from-blue-500 to-cyan-400 h-full rounded-full transition-all duration-700 ease-out shadow-[0_0_10px_rgba(59,130,246,0.5)]" style="width: 0%"></div>
+                </div>
             </div>
 
-            <div id="options-container" class="grid gap-3"></div>
+            <div id="skeleton-loader" class="animate-pulse space-y-4">
+                <div class="h-6 bg-slate-700/50 rounded w-3/4"></div>
+                <div class="h-4 bg-slate-700/30 rounded w-1/2"></div>
+                <div class="grid gap-3 mt-8">
+                    <div class="h-16 bg-slate-700/40 rounded-xl"></div>
+                    <div class="h-16 bg-slate-700/40 rounded-xl"></div>
+                    <div class="h-16 bg-slate-700/40 rounded-xl"></div>
+                    <div class="h-16 bg-slate-700/40 rounded-xl"></div>
+                </div>
+            </div>
 
-            <button id="btn-confirm" onclick="submitComplexAnswer()" disabled class="hidden w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
-                JAWAB SEKARANG <i class="fas fa-check ml-2"></i>
-            </button>
+            <div id="question-content" class="hidden opacity-0 transform translate-y-4 transition-all duration-500">
+                <div class="mb-6">
+                    <div id="media-container" class="hidden mb-4 rounded-xl overflow-hidden border border-slate-600 shadow-lg">
+                        <img id="q-image" class="w-full h-56 object-cover hidden">
+                        <audio id="q-audio" controls class="w-full hidden bg-slate-800"></audio>
+                    </div>
 
-            <div id="feedback-area" class="hidden mt-6 p-5 bg-slate-900 rounded-xl border-l-4 border-yellow-500 animate-fade-up shadow-inner">
-                <h4 class="font-bold text-yellow-400 mb-2 flex items-center gap-2">
-                    <i class="fas fa-lightbulb"></i> Pembahasan
-                </h4>
-                <p id="explanation-text" class="text-sm text-slate-300 mb-3 leading-relaxed"></p>
-                <div class="text-xs text-slate-500 italic border-t border-slate-700 pt-2" id="reference-text"></div>
-                <button onclick="nextQuestion()" class="w-full mt-4 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-lg font-bold transition shadow-lg flex items-center justify-center gap-2">
-                    Lanjut Soal Berikutnya <i class="fas fa-arrow-right"></i>
+                    <h2 id="question-text" class="text-xl md:text-2xl font-bold leading-relaxed text-white"></h2>
+                    <p id="instruction-text" class="text-sm text-slate-400 mt-2 italic border-l-4 border-yellow-500 pl-3"></p>
+                </div>
+
+                <div id="options-container" class="grid gap-3"></div>
+
+                <button id="btn-confirm" onclick="submitComplexAnswer()" disabled class="hidden w-full mt-8 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white py-3.5 rounded-xl font-bold transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95">
+                    JAWAB SEKARANG <i class="fas fa-check ml-2"></i>
                 </button>
+
+                <div id="feedback-area" class="hidden mt-8 p-5 bg-slate-900/80 rounded-xl border-l-4 border-yellow-500 shadow-inner backdrop-blur-sm">
+                    <h4 class="font-bold text-yellow-400 mb-2 flex items-center gap-2">
+                        <i class="fas fa-lightbulb"></i> Pembahasan
+                    </h4>
+                    <p id="explanation-text" class="text-sm text-slate-300 mb-3 leading-relaxed"></p>
+                    <div class="text-xs text-slate-500 italic border-t border-slate-700/50 pt-2" id="reference-text"></div>
+                    
+                    <button onclick="nextQuestion()" class="w-full mt-4 bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-lg font-bold transition shadow-lg flex items-center justify-center gap-2 border border-slate-600 group">
+                        Lanjut Soal Berikutnya <i class="fas fa-arrow-right transform group-hover:translate-x-1 transition"></i>
+                    </button>
+                </div>
             </div>
         </div>
 
         <div id="result-card" class="hidden glass rounded-3xl p-8 text-center shadow-2xl bg-slate-800 border border-slate-700">
-            
             <div class="relative inline-block mb-4">
-                <div class="text-6xl animate-bounce" id="grade-emoji">🎉</div>
+                <div class="absolute inset-0 bg-yellow-500 blur-2xl opacity-20 rounded-full"></div>
+                <div class="text-7xl animate-bounce relative z-10" id="grade-emoji">🎉</div>
             </div>
 
             <h2 class="text-3xl font-bold mb-1 text-white" id="grade-title">Selesai!</h2>
@@ -176,13 +205,34 @@
         
         // Penampung Jawaban User (Untuk dikirim ke Server)
         let userAnswers = []; 
-        let estimatedCorrect = 0; // Hanya untuk visual
+        let estimatedCorrect = 0; 
 
         const sfxCorrect = document.getElementById('sfx-correct');
         const sfxWrong = document.getElementById('sfx-wrong');
         const sfxFinish = document.getElementById('sfx-finish');
         const sfxBadge = document.getElementById('sfx-badge');
         
+        // Helper Animation Value (Untuk Fitur Counting Effect)
+        function animateValue(obj, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = Math.floor(progress * (end - start) + start);
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        // Helper Update Progress Bar
+        function updateProgressBar() {
+            const percent = ((currentIdx + 1) / questions.length) * 100;
+            document.getElementById('progress-bar').style.width = percent + "%";
+            document.getElementById('progress-percent').innerText = Math.round(percent) + "%";
+        }
+
         function playSound(el) { el.currentTime = 0; el.play().catch(()=>{}); }
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
@@ -192,19 +242,40 @@
             return array;
         }
 
-        if(questions.length > 0) loadQuestion();
-        else document.getElementById('question-text').innerText = "Tidak ada soal.";
+        if(questions.length > 0) {
+            // Delay sedikit untuk menampilkan efek skeleton di awal
+            setTimeout(loadQuestion, 800);
+        } else {
+            document.getElementById('skeleton-loader').classList.add('hidden');
+            document.getElementById('question-content').classList.remove('hidden');
+            document.getElementById('question-text').innerText = "Tidak ada soal.";
+        }
 
         function loadQuestion() {
             if (currentIdx >= questions.length) { finishQuiz(); return; }
             const q = questions[currentIdx];
             isAnswered = false;
             
+            // TRANSITION & SKELETON HANDLING
+            const contentDiv = document.getElementById('question-content');
+            const skeletonDiv = document.getElementById('skeleton-loader');
+            
+            // Fade In Effect
+            contentDiv.classList.remove('hidden');
+            skeletonDiv.classList.add('hidden');
+            // Trigger reflow/animation
+            void contentDiv.offsetWidth; 
+            contentDiv.classList.add('fade-enter-active');
+            contentDiv.classList.remove('opacity-0', 'translate-y-4');
+
+            // Reset UI Content
             document.getElementById('question-text').innerText = q.question_text;
             document.getElementById('q-number').innerText = currentIdx + 1;
             document.getElementById('feedback-area').classList.add('hidden');
             document.getElementById('options-container').classList.remove('disabled-opt');
             document.getElementById('instruction-text').innerText = "";
+            
+            updateProgressBar();
 
             // Media Handle
             const imgEl = document.getElementById('q-image');
@@ -228,7 +299,7 @@
                 document.getElementById('timer-display').innerText = "∞";
             }
 
-            // Options
+            // Options Render
             const container = document.getElementById('options-container');
             container.innerHTML = '';
             const btnConfirm = document.getElementById('btn-confirm');
@@ -240,8 +311,8 @@
                 document.getElementById('instruction-text').innerText = "Pilih satu jawaban yang benar.";
                 displayOptions.forEach(opt => {
                     const btn = document.createElement('button');
-                    btn.className = 'w-full text-left p-4 rounded-xl bg-slate-700 hover:bg-slate-600 border-2 border-transparent transition font-medium text-lg flex justify-between items-center group option-btn shadow-sm text-white';
-                    btn.innerHTML = `<span>${opt.option_text}</span>`;
+                    btn.className = 'w-full text-left p-4 rounded-xl bg-slate-700/50 hover:bg-slate-600 border border-slate-600 hover:border-blue-400 transition-all duration-200 font-medium text-lg flex justify-between items-center group option-btn shadow-sm text-white relative overflow-hidden';
+                    btn.innerHTML = `<span class="relative z-10">${opt.option_text}</span>`;
                     btn.onclick = () => submitSingle(opt, btn);
                     container.appendChild(btn);
                 });
@@ -251,10 +322,10 @@
                 btnConfirm.classList.remove('hidden');
                 displayOptions.forEach(opt => {
                     const div = document.createElement('div');
-                    div.className = 'option-item w-full text-left p-4 rounded-xl border border-slate-600 bg-slate-800 hover:bg-slate-700 transition mb-2 cursor-pointer flex items-center gap-3 shadow-sm text-white';
+                    div.className = 'option-item w-full text-left p-4 rounded-xl border border-slate-600 bg-slate-700/50 hover:bg-slate-600 transition mb-2 cursor-pointer flex items-center gap-3 shadow-sm text-white';
                     div.innerHTML = `<div class="w-6 h-6 border-2 border-slate-400 rounded flex items-center justify-center"><i class="fas fa-check text-transparent transition check-icon"></i></div> <span>${opt.option_text}</span>`;
                     div.dataset.id = opt.id; 
-                    div.dataset.correct = opt.is_correct; // Visual only
+                    div.dataset.correct = opt.is_correct;
                     div.onclick = () => {
                         div.classList.toggle('selected');
                         div.querySelector('.check-icon').classList.toggle('text-transparent');
@@ -269,9 +340,9 @@
                 btnConfirm.classList.remove('hidden'); btnConfirm.disabled = false;
                 displayOptions.forEach(opt => {
                     const div = document.createElement('div');
-                    div.className = 'ordering-item w-full p-3 rounded-xl border border-slate-600 bg-slate-800 mb-2 flex justify-between items-center text-white shadow-sm';
+                    div.className = 'ordering-item w-full p-3 rounded-xl border border-slate-600 bg-slate-700/50 mb-2 flex justify-between items-center text-white shadow-sm';
                     div.dataset.id = opt.id; div.dataset.order = opt.correct_order;
-                    div.innerHTML = `<span>${opt.option_text}</span><div class="flex flex-col gap-1"><button onclick="moveItem(this, -1)" class="p-1 bg-slate-700 rounded hover:bg-slate-600 text-xs">▲</button><button onclick="moveItem(this, 1)" class="p-1 bg-slate-700 rounded hover:bg-slate-600 text-xs">▼</button></div>`;
+                    div.innerHTML = `<span>${opt.option_text}</span><div class="flex flex-col gap-1"><button onclick="moveItem(this, -1)" class="p-1 bg-slate-600 rounded hover:bg-slate-500 text-xs">▲</button><button onclick="moveItem(this, 1)" class="p-1 bg-slate-600 rounded hover:bg-slate-500 text-xs">▼</button></div>`;
                     container.appendChild(div);
                 });
             }
@@ -281,11 +352,11 @@
                 const rightOptions = shuffleArray(q.options.map(o => ({id: o.id, text: o.matching_pair})));
                 displayOptions.forEach(opt => {
                     const row = document.createElement('div');
-                    row.className = 'p-3 rounded-xl border border-slate-600 bg-slate-800 mb-2 shadow-sm text-white';
-                    let selectHtml = `<select class="matching-select w-full mt-2 bg-slate-700 p-2 rounded border border-slate-500 focus:outline-none text-white" data-left-id="${opt.id}" data-correct-pair="${opt.matching_pair}" onchange="validateComplexAnswer()"><option value="">-- Pilih --</option>`;
+                    row.className = 'p-3 rounded-xl border border-slate-600 bg-slate-700/50 mb-2 shadow-sm text-white';
+                    let selectHtml = `<select class="matching-select w-full mt-2 bg-slate-800 p-2 rounded border border-slate-500 focus:outline-none text-white focus:border-blue-400 transition" data-left-id="${opt.id}" data-correct-pair="${opt.matching_pair}" onchange="validateComplexAnswer()"><option value="">-- Pilih --</option>`;
                     rightOptions.forEach(ro => { selectHtml += `<option value="${ro.text}">${ro.text}</option>`; });
                     selectHtml += `</select>`;
-                    row.innerHTML = `<div class="font-bold mb-1 border-b border-slate-700 pb-1">${opt.option_text}</div> ${selectHtml}`;
+                    row.innerHTML = `<div class="font-bold mb-1 border-b border-slate-600 pb-1">${opt.option_text}</div> ${selectHtml}`;
                     container.appendChild(row);
                 });
             }
@@ -313,6 +384,8 @@
             if(isAnswered) return; isAnswered = true; clearInterval(timerInterval);
             
             const isCorrect = opt.is_correct == 1; // Visual Only
+            const oldScore = estimatedScore;
+            
             if (isCorrect) { 
                 btn.classList.add('correct'); 
                 estimatedScore += 100; estimatedCorrect++; 
@@ -322,10 +395,13 @@
                 playSound(sfxWrong); 
             }
             
+            // ANIMATE SCORE
+            animateValue(document.getElementById("score-display"), oldScore, estimatedScore, 600);
+            
             // SIMPAN DATA UTK DIKIRIM KE SERVER
             userAnswers.push({ 
                 question_id: questions[currentIdx].id, 
-                answer: opt.id, // ID Jawaban
+                answer: opt.id, 
                 time_left: timeLeft 
             });
             
@@ -336,7 +412,7 @@
             if(isAnswered) return; isAnswered = true; clearInterval(timerInterval);
             const q = questions[currentIdx];
             let isCorrect = false;
-            let answerData = null; // Ini yang dikirim ke server
+            let answerData = null; 
 
             if (q.type === 'multiple') {
                 const selected = document.querySelectorAll('.option-item.selected');
@@ -344,20 +420,19 @@
                 const correctIds = q.options.filter(o => o.is_correct).map(o => o.id);
                 if (selectedIds.length === correctIds.length && selectedIds.every(id => correctIds.includes(id))) isCorrect = true;
                 
-                // Visual Feedback
                 document.querySelectorAll('.option-item').forEach(div => {
                     const id = parseInt(div.dataset.id);
                     const isKey = correctIds.includes(id);
                     if(isKey) div.classList.add('correct-indicator');
                 });
-                answerData = selectedIds; // Array ID
+                answerData = selectedIds; 
             } 
             else if (q.type === 'ordering') {
                 const items = document.querySelectorAll('.ordering-item');
                 const userOrder = Array.from(items).map(d => parseInt(d.dataset.id));
                 const correctOrder = [...q.options].sort((a,b) => a.correct_order - b.correct_order).map(o => o.id);
                 if (JSON.stringify(userOrder) === JSON.stringify(correctOrder)) isCorrect = true;
-                answerData = userOrder; // Array ID urut
+                answerData = userOrder;
             } 
             else if (q.type === 'matching') {
                 const selects = document.querySelectorAll('.matching-select');
@@ -369,13 +444,18 @@
                     else { sel.parentElement.classList.add('wrong'); allCorrect = false; }
                 });
                 if (allCorrect) isCorrect = true;
-                answerData = matches; // Array Object
+                answerData = matches;
             }
 
-            if (isCorrect) { estimatedScore += 150; estimatedCorrect++; playSound(sfxCorrect); }
-            else { playSound(sfxWrong); }
+            const oldScore = estimatedScore;
+            if (isCorrect) { 
+                estimatedScore += 150; estimatedCorrect++; playSound(sfxCorrect); 
+            } else { 
+                playSound(sfxWrong); 
+            }
+            // ANIMATE SCORE
+            animateValue(document.getElementById("score-display"), oldScore, estimatedScore, 600);
 
-            // SIMPAN DATA
             userAnswers.push({ 
                 question_id: q.id, 
                 answer: answerData, 
@@ -386,14 +466,16 @@
         }
 
         function finishTurn() {
-            document.getElementById('score-display').innerText = estimatedScore;
             document.getElementById('options-container').classList.add('disabled-opt');
             document.getElementById('btn-confirm').classList.add('hidden');
             const q = questions[currentIdx];
             document.getElementById('explanation-text').innerText = q.explanation || "Tidak ada pembahasan.";
             document.getElementById('reference-text').innerText = q.reference ? "📚 Sumber: " + q.reference : "";
-            document.getElementById('feedback-area').classList.remove('hidden');
-            document.getElementById('feedback-area').scrollIntoView({ behavior: 'smooth' });
+            
+            // Tampilkan Feedback dengan transisi halus
+            const feedbackArea = document.getElementById('feedback-area');
+            feedbackArea.classList.remove('hidden');
+            feedbackArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
         function handleTimeUp() {
@@ -401,7 +483,6 @@
             document.getElementById('options-container').classList.add('disabled-opt');
             document.getElementById('btn-confirm').classList.add('hidden');
             
-            // Push jawaban kosong/null karena waktu habis
             userAnswers.push({ 
                 question_id: questions[currentIdx].id, 
                 answer: null, 
@@ -412,15 +493,26 @@
             document.getElementById('feedback-area').classList.remove('hidden');
         }
 
-        function nextQuestion() { currentIdx++; loadQuestion(); }
+        // FUNGSI TRANSISI NEXT QUESTION (POINT 6)
+        function nextQuestion() { 
+            const contentDiv = document.getElementById('question-content');
+            
+            // 1. Animasi Keluar (Fade Out)
+            contentDiv.classList.add('opacity-0', 'translate-y-4'); // Tailwind utility or custom css
+            contentDiv.classList.remove('fade-enter-active');
+
+            // 2. Tunggu animasi selesai (300ms), baru ganti data
+            setTimeout(() => {
+                currentIdx++; 
+                loadQuestion();
+            }, 300); 
+        }
 
         // --- FINISH & SAVE ---
         function finishQuiz() {
             document.getElementById('quiz-card').classList.add('hidden');
             document.getElementById('result-card').classList.remove('hidden');
             playSound(sfxFinish);
-
-            // Update UI dengan Estimasi sementara
             updateResultUI(estimatedScore, estimatedCorrect, questions.length);
         }
 
@@ -428,7 +520,9 @@
             const wrongVal = totalVal - correctVal;
             const percentage = totalVal > 0 ? Math.round((correctVal / totalVal) * 100) : 0;
             
-            document.getElementById('final-score').innerText = scoreVal;
+            // Animate Final Score
+            animateValue(document.getElementById('final-score'), 0, scoreVal, 1500);
+            
             document.getElementById('final-correct').innerText = correctVal;
             document.getElementById('final-wrong').innerText = wrongVal;
             document.getElementById('final-percentage').innerText = percentage + "%";
@@ -444,7 +538,6 @@
             document.getElementById('grade-subtitle').innerText = subtitle;
             document.getElementById('grade-emoji').innerText = emoji;
 
-            // Update Tiket Share (Hidden)
             document.getElementById('share-score').innerText = scoreVal;
             document.getElementById('share-grade-title').innerText = title;
             document.getElementById('share-emoji').innerText = emoji;
@@ -460,18 +553,15 @@
             const btnSave = document.getElementById('btn-save');
             btnSave.disabled = true; btnSave.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Memvalidasi...';
 
-            // KIRIM JAWABAN KE SERVER UNTUK DIVALIDASI
             fetch("{{ route('quiz.submit') }}", {
                 method: "POST", headers: { "Content-Type": "application/json", "X-CSRF-TOKEN": "{{ csrf_token() }}" },
                 body: JSON.stringify({ 
                     category_id: {{ $category->id }}, 
                     player_name: name, 
-                    answers: userAnswers // Kirim data lengkap
+                    answers: userAnswers 
                 })
             }).then(res => res.json()).then(data => {
-                // UPDATE UI DENGAN SKOR RESMI DARI SERVER
                 updateResultUI(data.real_score, data.correct_count, questions.length);
-                
                 document.getElementById('save-section').classList.add('hidden');
                 document.getElementById('after-save-actions').classList.remove('hidden');
                 document.getElementById('btn-review-link').href = "/review/" + data.result_id;

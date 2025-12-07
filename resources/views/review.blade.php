@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pembahasan Soal - Quiz Master</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -11,10 +13,13 @@
         .modal-animate { animation: popIn 0.3s ease-out; }
     </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen p-4 font-sans">
-    <div class="max-w-3xl mx-auto pb-20">
-        
-        <div class="text-center mb-6 pt-8">
+<body class="bg-gray-900 text-white min-h-screen font-sans">
+    
+    <a href="{{ route('menu') }}" class="fixed top-4 left-4 z-50 bg-slate-800/80 backdrop-blur hover:bg-slate-700 text-white w-10 h-10 rounded-full flex items-center justify-center border border-slate-600 shadow-lg transition">
+        <i class="fas fa-arrow-left"></i>
+    </a>
+
+    <div class="max-w-3xl mx-auto p-4 pb-32"> <div class="text-center mb-6 pt-8">
             <h1 class="text-3xl font-bold mb-1 text-blue-400">Pembahasan Hasil</h1>
             <p class="text-slate-400 text-sm">
                 Quiz: <span class="text-white font-bold">{{ $result->category->name }}</span>
@@ -140,10 +145,10 @@
 
         <div class="fixed bottom-0 left-0 w-full bg-slate-900/90 backdrop-blur border-t border-slate-700 p-4 z-50">
             <div class="max-w-3xl mx-auto flex gap-3">
-                <a href="{{ route('menu') }}" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-xl font-bold transition text-center border border-slate-600">
-                    <i class="fas fa-home mr-1"></i> Menu
+                <a href="{{ route('menu') }}" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-3.5 rounded-xl font-bold transition text-center border border-slate-600 shadow-md">
+                    <i class="fas fa-home mr-2"></i> Kembali ke Menu
                 </a>
-                <a href="{{ route('quiz.play', $result->category->slug) }}" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold shadow-lg transition text-center flex items-center justify-center gap-2">
+                <a href="{{ route('quiz.play', $result->category->slug) }}" class="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white py-3.5 rounded-xl font-bold shadow-lg transition text-center flex items-center justify-center gap-2">
                     <i class="fas fa-redo-alt"></i> Main Lagi
                 </a>
             </div>
