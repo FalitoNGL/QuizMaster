@@ -79,6 +79,7 @@ Route::prefix('admin')->group(function () {
     Route::get('/edit/{id}', [AdminController::class, 'edit'])->name('admin.edit');
     Route::post('/update/{id}', [AdminController::class, 'update'])->name('admin.update');
     Route::get('/delete/{id}', [AdminController::class, 'destroy'])->name('admin.delete');
+    Route::get('/cleanup', [AdminController::class, 'cleanup'])->name('admin.cleanup');
     // ... rute admin lainnya ...
 
     // Import JSON

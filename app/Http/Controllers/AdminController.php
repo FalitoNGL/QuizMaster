@@ -21,7 +21,6 @@ class AdminController extends Controller
     }
 
     public function login(Request $request) {
-        // Password sederhana (hardcoded) sesuai request
         if ($request->password === 'admin123') {
             session(['is_admin' => true]);
             return redirect()->route('admin.dashboard');
@@ -41,23 +40,17 @@ class AdminController extends Controller
     public function index() {
         if (!session('is_admin')) return redirect()->route('admin.login');
 
-        // Statistik Kartu
         $totalQuestions = Question::count();
         $totalGames = Result::count();
         $totalPlayers = Result::distinct('player_name')->count('player_name');
         $avgScore = round(Result::avg('score') ?? 0);
 
-        // Data Grafik (Kategori Terpopuler)
         $chartData = Result::select('category_id', DB::raw('count(*) as total'))
-                        ->groupBy('category_id')
-                        ->with('category')
-                        ->get();
-        
+                        ->groupBy('category_id')->with('category')->get();
         $labels = $chartData->pluck('category.name');
         $data = $chartData->pluck('total');
 
-        // Data Tabel (Soal & Aktivitas Terbaru)
-        $questions = Question::with('category')->latest()->paginate(5);
+        $questions = Question::with('category')->latest()->paginate(10); // Tampilkan 10 per halaman
         $recentActivities = Result::with('category')->latest()->take(5)->get();
 
         return view('admin.dashboard', compact(
@@ -72,7 +65,6 @@ class AdminController extends Controller
 
     public function categories() {
         if (!session('is_admin')) return redirect()->route('admin.login');
-        
         $categories = Category::withCount('questions')->get();
         return view('admin.categories', compact('categories'));
     }
@@ -84,21 +76,98 @@ class AdminController extends Controller
             'description' => 'required|string',
             'icon_class' => 'required|string'
         ]);
-
         Category::create($request->all());
-
-        return redirect()->route('admin.categories')->with('success', 'Kategori baru berhasil dibuat!');
+        return redirect()->route('admin.categories')->with('success', 'Kategori berhasil dibuat!');
     }
 
     public function deleteCategory($id) {
         if (!session('is_admin')) return redirect()->route('admin.login');
-
         Category::destroy($id);
-        return redirect()->route('admin.categories')->with('success', 'Kategori dan semua soal di dalamnya telah dihapus.');
+        return redirect()->route('admin.categories')->with('success', 'Kategori dihapus.');
     }
 
     // ==========================================
-    // 4. MANAJEMEN SOAL (CRUD)
+    // 4. IMPORT JSON (DENGAN ANTI DUPLIKAT)
+    // ==========================================
+
+    public function import() {
+        if (!session('is_admin')) return redirect()->route('admin.login');
+        $categories = Category::all();
+        return view('admin.import', compact('categories'));
+    }
+
+    public function processImport(Request $request) {
+        $request->validate([
+            'category_id' => 'required|exists:categories,id',
+            'json_file' => 'required|file|mimes:json,txt',
+        ]);
+
+        try {
+            $file = $request->file('json_file');
+            $jsonContent = file_get_contents($file->getRealPath());
+            $data = json_decode($jsonContent, true);
+
+            if (!$data || !is_array($data)) {
+                return back()->with('error', 'Format JSON tidak valid.');
+            }
+
+            DB::beginTransaction();
+            $count = 0;
+            $skipped = 0;
+
+            foreach ($data as $item) {
+                if (!isset($item['question']) || !isset($item['options']) || !isset($item['correct'])) {
+                    continue;
+                }
+
+                // --- CEK DUPLIKAT ---
+                // Cari apakah soal yang sama persis sudah ada di kategori ini
+                $exists = Question::where('category_id', $request->category_id)
+                                  ->where('question_text', $item['question'])
+                                  ->exists();
+
+                if ($exists) {
+                    $skipped++;
+                    continue; // Lewati jika sudah ada
+                }
+                // --------------------
+
+                $q = Question::create([
+                    'category_id' => $request->category_id,
+                    'type' => 'single',
+                    'question_text' => $item['question'],
+                    'explanation' => $item['explanation'] ?? null,
+                    'reference' => $item['reference'] ?? null,
+                    'image_path' => null,
+                    'audio_path' => null,
+                ]);
+
+                foreach ($item['options'] as $idx => $optText) {
+                    $isCorrect = ($idx == $item['correct']);
+                    Option::create([
+                        'question_id' => $q->id,
+                        'option_text' => $optText,
+                        'is_correct' => $isCorrect
+                    ]);
+                }
+                $count++;
+            }
+
+            DB::commit();
+            
+            $msg = "Berhasil mengimport $count soal!";
+            if ($skipped > 0) $msg .= " ($skipped soal dilewati karena duplikat)";
+
+            return redirect()->route('admin.dashboard')->with('success', $msg);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Gagal Import: ' . $e->getMessage());
+        }
+    }
+
+    // ==========================================
+    // 5. MANAJEMEN SOAL MANUAL (CRUD)
     // ==========================================
 
     public function create() {
@@ -108,35 +177,32 @@ class AdminController extends Controller
     }
 
     public function store(Request $request) {
-        // Validasi Input Utama
         $request->validate([
             'category_id' => 'required',
-            'type' => 'required|in:single,multiple,ordering,matching',
+            'type' => 'required',
             'question_text' => 'required',
             'image' => 'nullable|image|max:2048',
             'audio' => 'nullable|mimes:mp3,wav|max:5120',
             'explanation' => 'nullable|string',
-            'reference' => 'nullable|string|max:255'
+            'reference' => 'nullable|string'
         ]);
 
-        // Validasi Opsi Berdasarkan Tipe
+        // Validasi Opsi
         if ($request->type == 'single') {
             $request->validate(['options_single' => 'required|array|min:2', 'correct_single' => 'required']);
         } elseif ($request->type == 'multiple') {
-            $request->validate(['options_multiple' => 'required|array|min:2', 'correct_multiple' => 'required|array']);
+            $request->validate(['options_multiple' => 'required|array|min:2']);
         } elseif ($request->type == 'ordering') {
             $request->validate(['options_ordering' => 'required|array|min:2']);
         } elseif ($request->type == 'matching') {
-            $request->validate(['options_matching_left' => 'required|array|min:2', 'options_matching_right' => 'required|array|min:2']);
+            $request->validate(['options_matching_left' => 'required|array|min:2']);
         }
 
-        // Upload Media
         $imagePath = $request->file('image') ? $request->file('image')->store('question_images', 'public') : null;
         $audioPath = $request->file('audio') ? $request->file('audio')->store('question_audio', 'public') : null;
 
         DB::beginTransaction();
         try {
-            // Simpan Pertanyaan
             $q = Question::create([
                 'category_id' => $request->category_id,
                 'type' => $request->type,
@@ -147,56 +213,31 @@ class AdminController extends Controller
                 'reference' => $request->reference
             ]);
 
-            // Simpan Opsi Jawaban
             if ($request->type == 'single') {
                 foreach ($request->options_single as $idx => $val) {
-                    Option::create([
-                        'question_id' => $q->id,
-                        'option_text' => $val,
-                        'is_correct' => ($idx == $request->correct_single)
-                    ]);
+                    Option::create(['question_id' => $q->id, 'option_text' => $val, 'is_correct' => ($idx == $request->correct_single)]);
                 }
-            } 
-            elseif ($request->type == 'multiple') {
+            } elseif ($request->type == 'multiple') {
                 foreach ($request->options_multiple as $idx => $val) {
                     $isCorrect = isset($request->correct_multiple) && in_array($idx, $request->correct_multiple);
-                    Option::create([
-                        'question_id' => $q->id,
-                        'option_text' => $val,
-                        'is_correct' => $isCorrect
-                    ]);
+                    Option::create(['question_id' => $q->id, 'option_text' => $val, 'is_correct' => $isCorrect]);
                 }
-            }
-            elseif ($request->type == 'ordering') {
+            } elseif ($request->type == 'ordering') {
                 foreach ($request->options_ordering as $idx => $val) {
-                    Option::create([
-                        'question_id' => $q->id,
-                        'option_text' => $val,
-                        'correct_order' => $idx + 1
-                    ]);
+                    Option::create(['question_id' => $q->id, 'option_text' => $val, 'correct_order' => $idx + 1]);
                 }
-            }
-            elseif ($request->type == 'matching') {
+            } elseif ($request->type == 'matching') {
                 $count = count($request->options_matching_left);
                 for ($i = 0; $i < $count; $i++) {
-                    Option::create([
-                        'question_id' => $q->id,
-                        'option_text' => $request->options_matching_left[$i],
-                        'matching_pair' => $request->options_matching_right[$i]
-                    ]);
+                    Option::create(['question_id' => $q->id, 'option_text' => $request->options_matching_left[$i], 'matching_pair' => $request->options_matching_right[$i]]);
                 }
             }
 
             DB::commit();
             return redirect()->route('admin.dashboard')->with('success', 'Soal berhasil ditambahkan!');
-
         } catch (\Exception $e) {
             DB::rollBack();
-            // Bersihkan file jika gagal
-            if ($imagePath) Storage::disk('public')->delete($imagePath);
-            if ($audioPath) Storage::disk('public')->delete($audioPath);
-            
-            return back()->with('error', 'Gagal menyimpan: ' . $e->getMessage())->withInput();
+            return back()->with('error', 'Gagal: ' . $e->getMessage())->withInput();
         }
     }
 
@@ -221,7 +262,6 @@ class AdminController extends Controller
             if ($q->image_path) Storage::disk('public')->delete($q->image_path);
             $dataToUpdate['image_path'] = $request->file('image')->store('question_images', 'public');
         }
-
         if ($request->hasFile('audio')) {
             if ($q->audio_path) Storage::disk('public')->delete($q->audio_path);
             $dataToUpdate['audio_path'] = $request->file('audio')->store('question_audio', 'public');
@@ -229,7 +269,6 @@ class AdminController extends Controller
 
         $q->update($dataToUpdate);
 
-        // Update Opsi (Hanya support Single Choice sederhana untuk saat ini)
         if ($q->type == 'single' && $request->has('options')) {
             $i = 0;
             foreach ($q->options as $option) {
@@ -242,99 +281,50 @@ class AdminController extends Controller
                 $i++;
             }
         }
-
         return redirect()->route('admin.dashboard')->with('success', 'Soal berhasil diupdate!');
     }
 
     public function destroy($id) {
         if (!session('is_admin')) return redirect()->route('admin.login');
-        
         $q = Question::findOrFail($id);
         if ($q->image_path) Storage::disk('public')->delete($q->image_path);
         if ($q->audio_path) Storage::disk('public')->delete($q->audio_path);
-        
         $q->delete();
-        return redirect()->route('admin.dashboard')->with('success', 'Soal berhasil dihapus!');
+        return redirect()->route('admin.dashboard')->with('success', 'Soal dihapus!');
     }
 
     // ==========================================
-    // 5. IMPORT JSON (FITUR BARU!)
+    // 6. FITUR BERSIH-BERSIH (HAPUS DUPLIKAT)
     // ==========================================
 
-    public function import() {
+    public function cleanup() {
         if (!session('is_admin')) return redirect()->route('admin.login');
-        $categories = Category::all();
-        return view('admin.import', compact('categories'));
-    }
 
-    public function processImport(Request $request) {
-        $request->validate([
-            'category_id' => 'required|exists:categories,id',
-            'json_file' => 'required|file|mimes:json,txt',
-        ]);
+        // Cari duplikat: Soal dengan teks sama di kategori sama
+        $duplicates = Question::select('question_text', 'category_id', DB::raw('count(*) as total'))
+                        ->groupBy('question_text', 'category_id')
+                        ->having('total', '>', 1)
+                        ->get();
 
-        try {
-            // 1. Baca & Decode File
-            $file = $request->file('json_file');
-            $content = file_get_contents($file->getRealPath());
-            $data = json_decode($content, true);
+        $deletedCount = 0;
 
-            if (!$data || !is_array($data)) {
-                return back()->with('error', 'Format JSON tidak valid. Pastikan file berisi array soal.');
+        foreach ($duplicates as $dup) {
+            // Ambil ID semua soal yang kembar
+            $ids = Question::where('question_text', $dup->question_text)
+                           ->where('category_id', $dup->category_id)
+                           ->orderBy('id', 'asc') // Urutkan dari yang terlama
+                           ->pluck('id')
+                           ->toArray();
+            
+            // Simpan yang pertama (index 0), hapus sisanya (index 1 ke atas)
+            $idsToDelete = array_slice($ids, 1);
+            
+            if (!empty($idsToDelete)) {
+                Question::destroy($idsToDelete);
+                $deletedCount += count($idsToDelete);
             }
-
-            DB::beginTransaction();
-            $count = 0;
-
-            // 2. Loop Data
-            foreach ($data as $item) {
-                // Validasi field wajib dalam JSON
-                if (empty($item['question']) || empty($item['options'])) continue;
-
-                // Default values
-                $type = $item['type'] ?? 'single';
-                
-                // Buat Soal
-                $q = Question::create([
-                    'category_id' => $request->category_id,
-                    'type' => $type,
-                    'question_text' => $item['question'],
-                    'explanation' => $item['explanation'] ?? null,
-                    'reference' => $item['reference'] ?? null,
-                    // Gambar/Audio bisa ditambahkan logic download jika perlu, 
-                    // tapi untuk import dasar kita skip dulu.
-                ]);
-
-                // Buat Opsi
-                if ($type == 'single' || $type == 'multiple') {
-                    foreach ($item['options'] as $idx => $optText) {
-                        $isCorrect = false;
-                        if (isset($item['correct'])) {
-                            if (is_array($item['correct'])) {
-                                $isCorrect = in_array($idx, $item['correct']);
-                            } else {
-                                $isCorrect = ($idx == $item['correct']);
-                            }
-                        }
-
-                        Option::create([
-                            'question_id' => $q->id,
-                            'option_text' => $optText,
-                            'is_correct' => $isCorrect
-                        ]);
-                    }
-                }
-                // Tambahkan logic untuk ordering/matching jika format JSON mendukungnya nanti
-                
-                $count++;
-            }
-
-            DB::commit();
-            return redirect()->route('admin.dashboard')->with('success', "Berhasil mengimport $count soal!");
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'Terjadi kesalahan saat import: ' . $e->getMessage());
         }
+
+        return redirect()->route('admin.dashboard')->with('success', "Berhasil menghapus $deletedCount soal duplikat. Database bersih!");
     }
 }
