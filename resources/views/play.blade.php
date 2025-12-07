@@ -10,66 +10,146 @@
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script>tailwind.config = { darkMode: 'class' }</script>
     <style>
-        .glass { background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
-        .correct { background-color: #10b981 !important; border-color: #059669 !important; color: white !important; }
-        .wrong { background-color: #ef4444 !important; border-color: #dc2626 !important; color: white !important; opacity: 0.9; }
-        .selected { border: 2px solid #3b82f6 !important; background-color: rgba(59, 130, 246, 0.2) !important; }
-        /* Indikator jawaban benar (hijau) meski tidak dipilih user */
-        .correct-indicator { border: 2px solid #10b981 !important; position: relative; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
-        .disabled-opt { pointer-events: none; opacity: 0.8; }
+        /* --- 1. ATMOSFER & LATAR BELAKANG --- */
+        body { overflow-x: hidden; background-color: #0f172a; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        .ambient-light {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; overflow: hidden;
+        }
+        .blob {
+            position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.6;
+            animation: float 10s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .blob-1 { top: -10%; left: -10%; width: 500px; height: 500px; background: #4f46e5; animation-delay: 0s; } /* Indigo */
+        .blob-2 { bottom: -10%; right: -10%; width: 400px; height: 400px; background: #06b6d4; animation-delay: -5s; } /* Cyan */
+        .blob-3 { top: 40%; left: 40%; width: 300px; height: 300px; background: #7c3aed; animation-delay: -2s; animation-duration: 15s; } /* Violet */
+        
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(30px, 50px) scale(1.1); }
+        }
+        .noise-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none;
+            opacity: 0.05; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* GLASS CARD STYLE */
+        .glass { 
+            background: rgba(30, 41, 59, 0.7); 
+            backdrop-filter: blur(16px); 
+            border: 1px solid rgba(255,255,255,0.1); 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); 
+            z-index: 10; position: relative; 
+        }
+
+        /* --- 2. TOMBOL 3D & OPSI --- */
+        .btn-3d {
+            transition: all 0.1s;
+            border-bottom-width: 4px;
+            transform: translateY(0);
+            position: relative;
+        }
+        .btn-3d:active, .btn-3d.pressed {
+            transform: translateY(4px);
+            border-bottom-width: 0px;
+            margin-bottom: 4px; /* Menjaga layout tidak lompat */
+        }
+        
+        /* Warna Button Default */
+        .btn-default { background-color: #334155; border-color: #1e293b; color: white; }
+        .btn-default:hover { background-color: #475569; }
+        
+        /* Warna Jawaban Benar (Hijau) */
+        .correct { 
+            background-color: #10b981 !important; 
+            border-color: #047857 !important;     
+            color: white !important; 
+        }
+        /* Warna Jawaban Salah (Merah) */
+        .wrong { 
+            background-color: #ef4444 !important; 
+            border-color: #b91c1c !important;     
+            color: white !important; opacity: 1;
+        }
+        
+        /* Style untuk Multiple Choice */
+        .selected { border: 2px solid #60a5fa !important; background-color: rgba(59, 130, 246, 0.3) !important; }
+        
+        /* Penanda Kunci Jawaban (jika user salah) */
+        .correct-indicator { border: 2px solid #34d399 !important; box-shadow: 0 0 15px rgba(52, 211, 153, 0.4); }
+
+        /* --- 3. VISUALISASI TIMER & PROGRESS --- */
+        .timer-circle { transition: stroke-dashoffset 1s linear; transform: rotate(-90deg); transform-origin: 50% 50%; }
+        
+        .segment-bar { display: flex; gap: 4px; height: 8px; width: 100%; margin-top: 10px; }
+        .segment { flex: 1; background: rgba(255,255,255,0.1); border-radius: 4px; transition: background 0.3s; }
+        .segment.active { background: #facc15; box-shadow: 0 0 10px rgba(250, 204, 21, 0.5); }
+        .segment.done-correct { background: #10b981; } /* Hijau */
+        .segment.done-wrong { background: #ef4444; }   /* Merah */
+
+        /* UTILS */
+        .disabled-opt { pointer-events: none; opacity: 0.9; }
         button:disabled { cursor: not-allowed; opacity: 0.6; filter: grayscale(100%); }
         
-        /* Animasi Transisi Halaman */
+        /* Animasi Masuk Halaman */
         .fade-enter { opacity: 0; transform: translateY(10px); }
         .fade-enter-active { opacity: 1; transform: translateY(0); transition: all 0.4s ease-out; }
         
-        /* Badge Pop Animation */
+        /* Badge Anim */
         .badge-pop { animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
     </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center font-sans p-4 overflow-x-hidden">
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center font-sans p-4">
     
-    <div class="w-full max-w-3xl relative z-10">
+    <div class="ambient-light">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+    <div class="noise-overlay"></div>
+
+    <div class="w-full max-w-2xl relative z-10">
         
-        <div class="flex justify-between items-center mb-6 glass p-4 rounded-full shadow-lg bg-white/5">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center border border-slate-500 shadow-inner">
-                    @if($timer > 0) <i class="fas fa-clock text-yellow-400"></i> @else <i class="fas fa-infinity text-blue-400"></i> @endif
+        <div class="flex justify-between items-center mb-6">
+            <div class="glass px-4 py-2 rounded-2xl flex items-center gap-3">
+                <div class="relative w-12 h-12 flex items-center justify-center">
+                    <svg class="absolute top-0 left-0 w-full h-full" width="48" height="48" viewBox="0 0 48 48">
+                        <circle cx="24" cy="24" r="20" fill="none" stroke="#334155" stroke-width="4"></circle>
+                        <circle id="timer-circle-svg" cx="24" cy="24" r="20" fill="none" stroke="#facc15" stroke-width="4" stroke-dasharray="125.6" stroke-dashoffset="0" stroke-linecap="round" class="timer-circle"></circle>
+                    </svg>
+                    <div id="timer-text" class="font-mono font-bold text-lg relative z-10 text-white">{{ $timer > 0 ? $timer : '∞' }}</div>
                 </div>
-                <div>
-                    <div class="text-[10px] text-slate-400 font-bold tracking-wider">WAKTU</div>
-                    <div id="timer-display" class="font-mono text-xl font-bold">{{ $timer > 0 ? $timer : '∞' }}</div>
+                <div class="leading-tight">
+                    <div class="text-[10px] text-slate-400 font-bold tracking-wider uppercase">Sisa Waktu</div>
+                    <div class="text-xs text-yellow-400 font-bold">Detik</div>
                 </div>
             </div>
-            <div class="text-right">
-                <div class="text-[10px] text-slate-400 font-bold tracking-wider">ESTIMASI SKOR</div>
-                <div id="score-display" class="font-mono text-xl font-bold text-blue-400">0</div>
+
+            <div class="glass px-5 py-2 rounded-2xl text-right">
+                <div class="text-[10px] text-slate-400 font-bold tracking-wider uppercase">Skor Sementara</div>
+                <div id="score-display" class="font-mono text-2xl font-bold text-blue-400 shadow-blue-500/50 drop-shadow-sm">0</div>
             </div>
         </div>
 
-        <div id="quiz-card" class="glass rounded-3xl p-8 shadow-2xl relative overflow-hidden bg-slate-800/90 border border-slate-700">
+        <div id="quiz-card" class="glass rounded-3xl p-6 md:p-8 relative overflow-hidden">
             
-            <div class="mb-6">
-                <div class="flex justify-between items-end mb-2">
-                    <span class="inline-block px-3 py-1 rounded-lg bg-blue-500/20 text-blue-300 text-xs font-bold border border-blue-500/30">
-                        SOAL <span id="q-number">1</span> / {{ $questions->count() }}
-                    </span>
+            <div class="mb-8">
+                <div class="flex justify-between items-end mb-1 px-1">
+                    <span class="text-sm font-bold text-slate-300">Soal <span id="q-number" class="text-white text-lg">1</span> <span class="text-slate-500">/ {{ $questions->count() }}</span></span>
                     <span class="text-xs text-slate-500 font-mono" id="progress-percent">0%</span>
                 </div>
-                <div class="w-full bg-slate-700/50 h-2 rounded-full overflow-hidden">
-                    <div id="progress-bar" class="bg-gradient-to-r from-blue-500 to-cyan-400 h-full rounded-full transition-all duration-700 ease-out shadow-[0_0_10px_rgba(59,130,246,0.5)]" style="width: 0%"></div>
-                </div>
+                <div id="segmented-bar" class="segment-bar">
+                    </div>
             </div>
 
             <div id="skeleton-loader" class="animate-pulse space-y-4">
                 <div class="h-6 bg-slate-700/50 rounded w-3/4"></div>
                 <div class="h-4 bg-slate-700/30 rounded w-1/2"></div>
                 <div class="grid gap-3 mt-8">
-                    <div class="h-16 bg-slate-700/40 rounded-xl"></div>
-                    <div class="h-16 bg-slate-700/40 rounded-xl"></div>
-                    <div class="h-16 bg-slate-700/40 rounded-xl"></div>
-                    <div class="h-16 bg-slate-700/40 rounded-xl"></div>
+                    <div class="h-14 bg-slate-700/40 rounded-xl"></div>
+                    <div class="h-14 bg-slate-700/40 rounded-xl"></div>
+                    <div class="h-14 bg-slate-700/40 rounded-xl"></div>
                 </div>
             </div>
 
@@ -80,33 +160,35 @@
                         <audio id="q-audio" controls class="w-full hidden bg-slate-800"></audio>
                     </div>
 
-                    <h2 id="question-text" class="text-xl md:text-2xl font-bold leading-relaxed text-white"></h2>
-                    <p id="instruction-text" class="text-sm text-slate-400 mt-2 italic border-l-4 border-yellow-500 pl-3"></p>
+                    <h2 id="question-text" class="text-xl md:text-2xl font-bold leading-snug text-white drop-shadow-md"></h2>
+                    <p id="instruction-text" class="text-sm text-slate-400 mt-3 italic flex items-center gap-2">
+                        <i class="fas fa-info-circle"></i> <span id="instruction-content"></span>
+                    </p>
                 </div>
 
-                <div id="options-container" class="grid gap-3"></div>
+                <div id="options-container" class="grid gap-4"></div>
 
-                <button id="btn-confirm" onclick="submitComplexAnswer()" disabled class="hidden w-full mt-8 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white py-3.5 rounded-xl font-bold transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95">
+                <button id="btn-confirm" onclick="submitComplexAnswer()" disabled class="hidden w-full mt-8 bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-xl font-bold transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95 btn-3d" style="border-bottom-color: #1e40af;">
                     JAWAB SEKARANG <i class="fas fa-check ml-2"></i>
                 </button>
 
-                <div id="feedback-area" class="hidden mt-8 p-5 bg-slate-900/80 rounded-xl border-l-4 border-yellow-500 shadow-inner backdrop-blur-sm">
+                <div id="feedback-area" class="hidden mt-8 p-5 bg-slate-800/80 rounded-xl border-l-4 border-yellow-500 shadow-inner backdrop-blur-sm">
                     <h4 class="font-bold text-yellow-400 mb-2 flex items-center gap-2">
                         <i class="fas fa-lightbulb"></i> Pembahasan
                     </h4>
                     <p id="explanation-text" class="text-sm text-slate-300 mb-3 leading-relaxed"></p>
                     <div class="text-xs text-slate-500 italic border-t border-slate-700/50 pt-2" id="reference-text"></div>
                     
-                    <button onclick="nextQuestion()" class="w-full mt-4 bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-lg font-bold transition shadow-lg flex items-center justify-center gap-2 border border-slate-600 group">
+                    <button onclick="nextQuestion()" class="w-full mt-4 bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-lg font-bold transition shadow-lg flex items-center justify-center gap-2 border border-slate-600 group btn-3d" style="border-bottom-color: #334155;">
                         Lanjut Soal Berikutnya <i class="fas fa-arrow-right transform group-hover:translate-x-1 transition"></i>
                     </button>
                 </div>
             </div>
         </div>
 
-        <div id="result-card" class="hidden glass rounded-3xl p-8 text-center shadow-2xl bg-slate-800 border border-slate-700">
+        <div id="result-card" class="hidden glass rounded-3xl p-8 text-center shadow-2xl bg-slate-800 border border-slate-700 relative z-20">
             <div class="relative inline-block mb-4">
-                <div class="absolute inset-0 bg-yellow-500 blur-2xl opacity-20 rounded-full"></div>
+                <div class="absolute inset-0 bg-yellow-500 blur-3xl opacity-20 rounded-full"></div>
                 <div class="text-7xl animate-bounce relative z-10" id="grade-emoji">🎉</div>
             </div>
 
@@ -116,19 +198,19 @@
             <div class="grid grid-cols-4 gap-2 mb-8 bg-slate-900/50 p-4 rounded-xl border border-slate-700 text-center">
                 <div>
                     <div class="text-[10px] uppercase text-slate-500 font-bold">Skor Akhir</div>
-                    <div class="text-xl md:text-2xl font-bold text-yellow-400" id="final-score">0</div>
+                    <div class="text-2xl font-bold text-yellow-400" id="final-score">0</div>
                 </div>
                 <div>
                     <div class="text-[10px] uppercase text-slate-500 font-bold">Akurasi</div>
-                    <div class="text-xl md:text-2xl font-bold text-blue-400" id="final-percentage">0%</div>
+                    <div class="text-2xl font-bold text-blue-400" id="final-percentage">0%</div>
                 </div>
                 <div>
                     <div class="text-[10px] uppercase text-slate-500 font-bold">Benar</div>
-                    <div class="text-xl md:text-2xl font-bold text-green-400" id="final-correct">0</div>
+                    <div class="text-2xl font-bold text-green-400" id="final-correct">0</div>
                 </div>
                 <div>
                     <div class="text-[10px] uppercase text-slate-500 font-bold">Salah</div>
-                    <div class="text-xl md:text-2xl font-bold text-red-400" id="final-wrong">0</div>
+                    <div class="text-2xl font-bold text-red-400" id="final-wrong">0</div>
                 </div>
             </div>
 
@@ -138,22 +220,22 @@
             </div>
 
             <div id="save-section">
-                <input type="text" id="player-name" value="{{ session('current_player', '') }}" placeholder="Ketik Nama Kamu" class="w-full bg-slate-700 px-4 py-3 rounded-xl mb-4 text-center text-white border border-slate-600 focus:border-blue-500 outline-none transition placeholder-slate-400">
-                <button onclick="saveScore()" id="btn-save" class="w-full bg-green-600 hover:bg-green-500 py-3 rounded-xl font-bold text-white shadow-lg mb-3 transition transform hover:scale-105">
+                <input type="text" id="player-name" value="{{ session('current_player', '') }}" placeholder="Ketik Nama Kamu" class="w-full bg-slate-700 px-4 py-3 rounded-xl mb-4 text-center text-white border-b-4 border-slate-900 focus:border-blue-500 outline-none transition placeholder-slate-400 font-bold">
+                <button onclick="saveScore()" id="btn-save" class="w-full bg-green-600 hover:bg-green-500 py-3 rounded-xl font-bold text-white shadow-lg mb-3 transition transform btn-3d" style="border-bottom-color: #15803d;">
                     <i class="fas fa-save mr-2"></i> Simpan & Lihat Hasil
                 </button>
             </div>
             
             <div id="after-save-actions" class="hidden flex flex-col gap-3">
                 <div class="grid grid-cols-2 gap-3">
-                    <a id="btn-review-link" href="#" class="bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold transition text-center shadow-lg flex items-center justify-center">
+                    <a id="btn-review-link" href="#" class="bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold transition text-center shadow-lg flex items-center justify-center btn-3d" style="border-bottom-color: #1d4ed8;">
                         <i class="fas fa-list-check mr-2"></i> Pembahasan
                     </a>
-                    <button onclick="generateShareImage()" id="btn-share-img" class="bg-purple-600 hover:bg-purple-500 text-white py-3 rounded-xl font-bold transition shadow-lg flex items-center justify-center">
+                    <button onclick="generateShareImage()" id="btn-share-img" class="bg-purple-600 hover:bg-purple-500 text-white py-3 rounded-xl font-bold transition shadow-lg flex items-center justify-center btn-3d" style="border-bottom-color: #7e22ce;">
                         <i class="fas fa-camera mr-2"></i> Share Gambar
                     </button>
                 </div>
-                <a href="{{ route('menu') }}" class="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl font-bold transition text-center border border-slate-600">
+                <a href="{{ route('menu') }}" class="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl font-bold transition text-center btn-3d" style="border-bottom-color: #334155;">
                     Kembali ke Menu
                 </a>
             </div>
@@ -196,13 +278,15 @@
     <script>
         const questions = @json($questions);
         const configTimer = {{ $timer }};
+        const labels = ['A', 'B', 'C', 'D', 'E', 'F']; 
+        
         let currentIdx = 0;
         let estimatedScore = 0;
         let timeLeft = configTimer;
         let timerInterval;
         let isAnswered = false;
         
-        // Penampung Jawaban User (Untuk dikirim ke Server)
+        // Penampung Jawaban User
         let userAnswers = []; 
         let estimatedCorrect = 0; 
 
@@ -211,7 +295,13 @@
         const sfxFinish = document.getElementById('sfx-finish');
         const sfxBadge = document.getElementById('sfx-badge');
         
-        // --- 1. Cegah Refresh Tidak Sengaja (UX Fix) ---
+        // Timer Elements
+        const timerCircle = document.getElementById('timer-circle-svg');
+        const totalDash = 125.6; // 2 * PI * R (R=20)
+
+        // Init Progress Bar
+        initSegmentBar();
+
         window.onbeforeunload = function(e) {
             const isPlaying = !document.getElementById('result-card') || document.getElementById('result-card').classList.contains('hidden');
             if (isPlaying && (typeof currentIdx !== 'undefined' && currentIdx < questions.length)) {
@@ -221,7 +311,7 @@
             }
         };
 
-        // Helper Animation Value
+        // --- HELPER FUNCTIONS ---
         function animateValue(obj, start, end, duration) {
             let startTimestamp = null;
             const step = (timestamp) => {
@@ -235,11 +325,23 @@
             window.requestAnimationFrame(step);
         }
 
-        // Helper Update Progress Bar
-        function updateProgressBar() {
-            const percent = ((currentIdx + 1) / questions.length) * 100;
-            document.getElementById('progress-bar').style.width = percent + "%";
-            document.getElementById('progress-percent').innerText = Math.round(percent) + "%";
+        // Logic Segmented Bar
+        function initSegmentBar() {
+            const bar = document.getElementById('segmented-bar');
+            bar.innerHTML = '';
+            for(let i=0; i<questions.length; i++) {
+                const seg = document.createElement('div');
+                seg.className = 'segment';
+                seg.id = 'seg-'+i;
+                bar.appendChild(seg);
+            }
+        }
+        
+        function updateSegmentStatus(idx, status) {
+            const seg = document.getElementById('seg-'+idx);
+            if(status === 'active') seg.classList.add('active');
+            if(status === 'correct') { seg.classList.remove('active'); seg.classList.add('done-correct'); }
+            if(status === 'wrong') { seg.classList.remove('active'); seg.classList.add('done-wrong'); }
         }
 
         function playSound(el) { el.currentTime = 0; el.play().catch(()=>{}); }
@@ -264,27 +366,25 @@
             const q = questions[currentIdx];
             isAnswered = false;
             
-            // TRANSITION & SKELETON HANDLING
+            // UI Resets
             const contentDiv = document.getElementById('question-content');
-            const skeletonDiv = document.getElementById('skeleton-loader');
-            
+            document.getElementById('skeleton-loader').classList.add('hidden');
             contentDiv.classList.remove('hidden');
-            skeletonDiv.classList.add('hidden');
-            // Trigger reflow/animation
             void contentDiv.offsetWidth; 
             contentDiv.classList.add('fade-enter-active');
             contentDiv.classList.remove('opacity-0', 'translate-y-4');
 
-            // Reset UI Content
             document.getElementById('question-text').innerText = q.question_text;
             document.getElementById('q-number').innerText = currentIdx + 1;
             document.getElementById('feedback-area').classList.add('hidden');
             document.getElementById('options-container').classList.remove('disabled-opt');
-            document.getElementById('instruction-text').innerText = "";
+            document.getElementById('instruction-content').innerText = "";
             
-            updateProgressBar();
+            // Update Visuals
+            updateSegmentStatus(currentIdx, 'active');
+            document.getElementById('progress-percent').innerText = Math.round((currentIdx / questions.length) * 100) + "%";
 
-            // Media Handle
+            // Media
             const imgEl = document.getElementById('q-image');
             const audioEl = document.getElementById('q-audio');
             const mediaCont = document.getElementById('media-container');
@@ -292,21 +392,22 @@
             if(q.image_path) { imgEl.src = "/storage/" + q.image_path; imgEl.classList.remove('hidden'); mediaCont.classList.remove('hidden'); }
             if(q.audio_path) { audioEl.src = "/storage/" + q.audio_path; audioEl.classList.remove('hidden'); mediaCont.classList.remove('hidden'); }
 
-            // Timer
+            // Timer Logic
             if (configTimer > 0) {
                 timeLeft = configTimer;
-                document.getElementById('timer-display').innerText = timeLeft;
+                updateTimerVisual(timeLeft);
                 clearInterval(timerInterval);
                 timerInterval = setInterval(() => {
                     timeLeft--;
-                    document.getElementById('timer-display').innerText = timeLeft;
+                    updateTimerVisual(timeLeft);
                     if (timeLeft <= 0) { clearInterval(timerInterval); handleTimeUp(); }
                 }, 1000);
             } else {
-                document.getElementById('timer-display').innerText = "∞";
+                document.getElementById('timer-text').innerText = "∞";
+                timerCircle.style.strokeDashoffset = 0;
             }
 
-            // Options Render
+            // Render Options
             const container = document.getElementById('options-container');
             container.innerHTML = '';
             const btnConfirm = document.getElementById('btn-confirm');
@@ -315,28 +416,33 @@
             const displayOptions = shuffleArray([...q.options]);
 
             if (q.type === 'single') {
-                document.getElementById('instruction-text').innerText = "Pilih satu jawaban yang benar.";
-                displayOptions.forEach(opt => {
+                document.getElementById('instruction-content').innerText = "Pilih satu jawaban yang benar.";
+                displayOptions.forEach((opt, idx) => {
+                    // Tombol 3D & Label Structure
                     const btn = document.createElement('button');
-                    btn.className = 'w-full text-left p-4 rounded-xl bg-slate-700/50 hover:bg-slate-600 border border-slate-600 hover:border-blue-400 transition-all duration-200 font-medium text-lg flex justify-between items-center group option-btn shadow-sm text-white relative overflow-hidden';
-                    btn.innerHTML = `<span class="relative z-10">${opt.option_text}</span>`;
-                    
-                    // PENANDA JAWABAN BENAR (PENTING)
-                    btn.dataset.isCorrect = opt.is_correct; 
-                    
-                    btn.onclick = () => submitSingle(opt, btn);
+                    btn.className = 'w-full text-left p-0 rounded-xl btn-3d btn-default flex items-stretch overflow-hidden group shadow-sm';
+                    btn.innerHTML = `
+                        <div class="bg-black/20 px-5 flex items-center justify-center font-bold text-slate-300 border-r border-black/10 text-xl group-hover:bg-black/30 transition">
+                            ${labels[idx] || '?'}
+                        </div>
+                        <div class="p-4 flex-grow font-medium text-lg relative z-10 flex items-center">${opt.option_text}</div>
+                    `;
+                    btn.dataset.isCorrect = opt.is_correct;
+                    btn.onclick = () => {
+                        btn.classList.add('pressed'); // Efek tekan manual
+                        setTimeout(() => submitSingle(opt, btn), 150); // Delay sedikit biar animasi terlihat
+                    };
                     container.appendChild(btn);
                 });
             }
             else if (q.type === 'multiple') {
-                document.getElementById('instruction-text').innerText = "Pilih SEMUA jawaban benar, lalu klik 'JAWAB SEKARANG'.";
+                document.getElementById('instruction-content').innerText = "Pilih SEMUA jawaban benar.";
                 btnConfirm.classList.remove('hidden');
                 displayOptions.forEach(opt => {
                     const div = document.createElement('div');
-                    div.className = 'option-item w-full text-left p-4 rounded-xl border border-slate-600 bg-slate-700/50 hover:bg-slate-600 transition mb-2 cursor-pointer flex items-center gap-3 shadow-sm text-white';
-                    div.innerHTML = `<div class="w-6 h-6 border-2 border-slate-400 rounded flex items-center justify-center"><i class="fas fa-check text-transparent transition check-icon"></i></div> <span>${opt.option_text}</span>`;
-                    div.dataset.id = opt.id; 
-                    div.dataset.correct = opt.is_correct;
+                    div.className = 'option-item w-full text-left p-4 rounded-xl border-2 border-slate-700 bg-slate-800 hover:bg-slate-700 transition mb-2 cursor-pointer flex items-center gap-3 shadow-sm group';
+                    div.innerHTML = `<div class="w-6 h-6 border-2 border-slate-500 rounded flex items-center justify-center group-hover:border-blue-400"><i class="fas fa-check text-transparent transition check-icon"></i></div> <span class="text-lg">${opt.option_text}</span>`;
+                    div.dataset.id = opt.id; div.dataset.correct = opt.is_correct;
                     div.onclick = () => {
                         div.classList.toggle('selected');
                         div.querySelector('.check-icon').classList.toggle('text-transparent');
@@ -347,30 +453,41 @@
                 });
             }
             else if (q.type === 'ordering') {
-                document.getElementById('instruction-text').innerText = "Urutkan jawaban dengan panah ▲ ▼.";
+                document.getElementById('instruction-content').innerText = "Urutkan jawaban dengan panah ▲ ▼.";
                 btnConfirm.classList.remove('hidden'); btnConfirm.disabled = false;
                 displayOptions.forEach(opt => {
                     const div = document.createElement('div');
-                    div.className = 'ordering-item w-full p-3 rounded-xl border border-slate-600 bg-slate-700/50 mb-2 flex justify-between items-center text-white shadow-sm';
+                    div.className = 'ordering-item w-full p-4 rounded-xl border-2 border-slate-700 bg-slate-800 mb-2 flex justify-between items-center text-white shadow-sm';
                     div.dataset.id = opt.id; div.dataset.order = opt.correct_order;
-                    div.innerHTML = `<span>${opt.option_text}</span><div class="flex flex-col gap-1"><button onclick="moveItem(this, -1)" class="p-1 bg-slate-600 rounded hover:bg-slate-500 text-xs">▲</button><button onclick="moveItem(this, 1)" class="p-1 bg-slate-600 rounded hover:bg-slate-500 text-xs">▼</button></div>`;
+                    div.innerHTML = `<span class="text-lg">${opt.option_text}</span><div class="flex flex-col gap-1"><button onclick="moveItem(this, -1)" class="p-2 bg-slate-700 rounded hover:bg-slate-600 text-xs">▲</button><button onclick="moveItem(this, 1)" class="p-2 bg-slate-700 rounded hover:bg-slate-600 text-xs">▼</button></div>`;
                     container.appendChild(div);
                 });
             }
             else if (q.type === 'matching') {
-                document.getElementById('instruction-text').innerText = "Pasangkan sisi kiri dengan kanan.";
+                document.getElementById('instruction-content').innerText = "Pasangkan sisi kiri dengan kanan.";
                 btnConfirm.classList.remove('hidden');
                 const rightOptions = shuffleArray(q.options.map(o => ({id: o.id, text: o.matching_pair})));
                 displayOptions.forEach(opt => {
                     const row = document.createElement('div');
-                    row.className = 'p-3 rounded-xl border border-slate-600 bg-slate-700/50 mb-2 shadow-sm text-white';
-                    let selectHtml = `<select class="matching-select w-full mt-2 bg-slate-800 p-2 rounded border border-slate-500 focus:outline-none text-white focus:border-blue-400 transition" data-left-id="${opt.id}" data-correct-pair="${opt.matching_pair}" onchange="validateComplexAnswer()"><option value="">-- Pilih --</option>`;
+                    row.className = 'p-4 rounded-xl border-2 border-slate-700 bg-slate-800 mb-2 shadow-sm text-white';
+                    let selectHtml = `<select class="matching-select w-full mt-2 bg-slate-900 p-3 rounded-lg border border-slate-600 focus:outline-none text-white focus:border-blue-400 transition" data-left-id="${opt.id}" data-correct-pair="${opt.matching_pair}" onchange="validateComplexAnswer()"><option value="">-- Pilih --</option>`;
                     rightOptions.forEach(ro => { selectHtml += `<option value="${ro.text}">${ro.text}</option>`; });
                     selectHtml += `</select>`;
-                    row.innerHTML = `<div class="font-bold mb-1 border-b border-slate-600 pb-1">${opt.option_text}</div> ${selectHtml}`;
+                    row.innerHTML = `<div class="font-bold mb-1 border-b border-slate-700 pb-2 text-lg">${opt.option_text}</div> ${selectHtml}`;
                     container.appendChild(row);
                 });
             }
+        }
+
+        function updateTimerVisual(val) {
+            document.getElementById('timer-text').innerText = val;
+            const offset = totalDash - (val / configTimer) * totalDash;
+            timerCircle.style.strokeDashoffset = offset;
+            
+            // Warna berubah saat kritis
+            if(val <= 5) { timerCircle.setAttribute('stroke', '#ef4444'); } 
+            else if(val <= 10) { timerCircle.setAttribute('stroke', '#f97316'); } 
+            else { timerCircle.setAttribute('stroke', '#facc15'); }
         }
 
         function validateComplexAnswer() {
@@ -390,41 +507,36 @@
             if (direction === 1 && item.nextElementSibling) parent.insertBefore(item.nextElementSibling, item);
         }
 
-        // --- SUBMIT JAWABAN ---
+        // --- SUBMIT LOGIC ---
         function submitSingle(opt, btn) {
             if(isAnswered) return; isAnswered = true; clearInterval(timerInterval);
             
-            const isCorrect = opt.is_correct == 1; // Visual Only
+            const isCorrect = opt.is_correct == 1; 
             const oldScore = estimatedScore;
             
+            // Update Segment Color
+            updateSegmentStatus(currentIdx, isCorrect ? 'correct' : 'wrong');
+
             if (isCorrect) { 
-                btn.classList.add('correct'); 
+                btn.classList.remove('btn-default'); btn.classList.add('correct'); 
                 estimatedScore += 100; estimatedCorrect++; 
                 playSound(sfxCorrect); 
+                // Particle Effect
+                confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } }); 
             } else { 
-                btn.classList.add('wrong'); 
+                btn.classList.remove('btn-default'); btn.classList.add('wrong'); 
                 playSound(sfxWrong); 
                 
-                // --- 2. Perbaikan Logic: Tampilkan Kunci Jawaban jika Salah ---
-                const allBtns = document.querySelectorAll('#options-container button');
-                allBtns.forEach(b => {
+                // Show Key
+                document.querySelectorAll('#options-container button').forEach(b => {
                     if(b.dataset.isCorrect == 1) {
-                        b.classList.add('correct'); 
-                        b.classList.add('correct-indicator'); 
+                        b.classList.remove('btn-default'); b.classList.add('correct'); b.classList.add('correct-indicator');
                     }
                 });
             }
             
-            // ANIMATE SCORE
             animateValue(document.getElementById("score-display"), oldScore, estimatedScore, 600);
-            
-            // SIMPAN DATA UTK DIKIRIM KE SERVER
-            userAnswers.push({ 
-                question_id: questions[currentIdx].id, 
-                answer: opt.id, 
-                time_left: timeLeft 
-            });
-            
+            userAnswers.push({ question_id: questions[currentIdx].id, answer: opt.id, time_left: timeLeft });
             finishTurn();
         }
 
@@ -440,7 +552,6 @@
                 const correctIds = q.options.filter(o => o.is_correct).map(o => o.id);
                 if (selectedIds.length === correctIds.length && selectedIds.every(id => correctIds.includes(id))) isCorrect = true;
                 
-                // Visual Feedback
                 document.querySelectorAll('.option-item').forEach(div => {
                     const id = parseInt(div.dataset.id);
                     const isKey = correctIds.includes(id);
@@ -468,13 +579,16 @@
                 answerData = matches;
             }
 
+            // Update Segment Color
+            updateSegmentStatus(currentIdx, isCorrect ? 'correct' : 'wrong');
+
             const oldScore = estimatedScore;
             if (isCorrect) { 
                 estimatedScore += 150; estimatedCorrect++; playSound(sfxCorrect); 
+                confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
             } else { 
                 playSound(sfxWrong); 
             }
-            // ANIMATE SCORE
             animateValue(document.getElementById("score-display"), oldScore, estimatedScore, 600);
 
             userAnswers.push({ 
@@ -493,7 +607,6 @@
             document.getElementById('explanation-text').innerText = q.explanation || "Tidak ada pembahasan.";
             document.getElementById('reference-text').innerText = q.reference ? "📚 Sumber: " + q.reference : "";
             
-            // Tampilkan Feedback dengan transisi halus
             const feedbackArea = document.getElementById('feedback-area');
             feedbackArea.classList.remove('hidden');
             feedbackArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -504,6 +617,9 @@
             document.getElementById('options-container').classList.add('disabled-opt');
             document.getElementById('btn-confirm').classList.add('hidden');
             
+            // Set Red Segment
+            updateSegmentStatus(currentIdx, 'wrong');
+
             userAnswers.push({ 
                 question_id: questions[currentIdx].id, 
                 answer: null, 
@@ -516,33 +632,23 @@
 
         function nextQuestion() { 
             const contentDiv = document.getElementById('question-content');
-            
-            // Animasi Keluar (Fade Out)
             contentDiv.classList.add('opacity-0', 'translate-y-4'); 
             contentDiv.classList.remove('fade-enter-active');
-
-            setTimeout(() => {
-                currentIdx++; 
-                loadQuestion();
-            }, 300); 
+            setTimeout(() => { currentIdx++; loadQuestion(); }, 300); 
         }
 
-        // --- FINISH & SAVE ---
         function finishQuiz() {
             document.getElementById('quiz-card').classList.add('hidden');
             document.getElementById('result-card').classList.remove('hidden');
             playSound(sfxFinish);
-            updateResultUI(estimatedScore, estimatedCorrect, questions.length);
-        }
-
-        function updateResultUI(scoreVal, correctVal, totalVal) {
-            const wrongVal = totalVal - correctVal;
-            const percentage = totalVal > 0 ? Math.round((correctVal / totalVal) * 100) : 0;
             
-            // Animate Final Score
-            animateValue(document.getElementById('final-score'), 0, scoreVal, 1500);
+            const totalVal = questions.length;
+            const wrongVal = totalVal - estimatedCorrect;
+            const percentage = totalVal > 0 ? Math.round((estimatedCorrect / totalVal) * 100) : 0;
             
-            document.getElementById('final-correct').innerText = correctVal;
+            animateValue(document.getElementById('final-score'), 0, estimatedScore, 1500);
+            
+            document.getElementById('final-correct').innerText = estimatedCorrect;
             document.getElementById('final-wrong').innerText = wrongVal;
             document.getElementById('final-percentage').innerText = percentage + "%";
             
@@ -557,7 +663,7 @@
             document.getElementById('grade-subtitle').innerText = subtitle;
             document.getElementById('grade-emoji').innerText = emoji;
 
-            document.getElementById('share-score').innerText = scoreVal;
+            document.getElementById('share-score').innerText = estimatedScore;
             document.getElementById('share-grade-title').innerText = title;
             document.getElementById('share-emoji').innerText = emoji;
 
@@ -580,7 +686,16 @@
                     answers: userAnswers 
                 })
             }).then(res => res.json()).then(data => {
-                updateResultUI(data.real_score, data.correct_count, questions.length);
+                // Update final UI with server real data
+                const totalVal = questions.length;
+                const percentage = totalVal > 0 ? Math.round((data.correct_count / totalVal) * 100) : 0;
+                
+                document.getElementById('final-score').innerText = data.real_score;
+                document.getElementById('final-correct').innerText = data.correct_count;
+                document.getElementById('final-wrong').innerText = totalVal - data.correct_count;
+                document.getElementById('final-percentage').innerText = percentage + "%";
+                document.getElementById('share-score').innerText = data.real_score;
+
                 document.getElementById('save-section').classList.add('hidden');
                 document.getElementById('after-save-actions').classList.remove('hidden');
                 document.getElementById('btn-review-link').href = "/review/" + data.result_id;
@@ -603,7 +718,6 @@
             });
         }
 
-        // --- SHARE IMAGE GENERATOR ---
         function generateShareImage() {
             const ticket = document.getElementById('shareable-ticket');
             const modal = document.getElementById('share-modal');
