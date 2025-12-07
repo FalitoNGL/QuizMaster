@@ -14,16 +14,15 @@
         .correct { background-color: #10b981 !important; border-color: #059669 !important; color: white !important; }
         .wrong { background-color: #ef4444 !important; border-color: #dc2626 !important; color: white !important; opacity: 0.9; }
         .selected { border: 2px solid #3b82f6 !important; background-color: rgba(59, 130, 246, 0.2) !important; }
-        .correct-indicator { border: 2px solid #10b981 !important; position: relative; }
+        /* Indikator jawaban benar (hijau) meski tidak dipilih user */
+        .correct-indicator { border: 2px solid #10b981 !important; position: relative; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
         .disabled-opt { pointer-events: none; opacity: 0.8; }
         button:disabled { cursor: not-allowed; opacity: 0.6; filter: grayscale(100%); }
         
         /* Animasi Transisi Halaman */
         .fade-enter { opacity: 0; transform: translateY(10px); }
         .fade-enter-active { opacity: 1; transform: translateY(0); transition: all 0.4s ease-out; }
-        .fade-exit { opacity: 1; transform: scale(1); }
-        .fade-exit-active { opacity: 0; transform: scale(0.98); transition: all 0.2s ease-in; }
-
+        
         /* Badge Pop Animation */
         .badge-pop { animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
@@ -212,7 +211,17 @@
         const sfxFinish = document.getElementById('sfx-finish');
         const sfxBadge = document.getElementById('sfx-badge');
         
-        // Helper Animation Value (Untuk Fitur Counting Effect)
+        // --- 1. Cegah Refresh Tidak Sengaja (UX Fix) ---
+        window.onbeforeunload = function(e) {
+            const isPlaying = !document.getElementById('result-card') || document.getElementById('result-card').classList.contains('hidden');
+            if (isPlaying && (typeof currentIdx !== 'undefined' && currentIdx < questions.length)) {
+                e.preventDefault();
+                e.returnValue = ''; 
+                return "Yakin ingin keluar? Progres kuis akan hilang.";
+            }
+        };
+
+        // Helper Animation Value
         function animateValue(obj, start, end, duration) {
             let startTimestamp = null;
             const step = (timestamp) => {
@@ -243,7 +252,6 @@
         }
 
         if(questions.length > 0) {
-            // Delay sedikit untuk menampilkan efek skeleton di awal
             setTimeout(loadQuestion, 800);
         } else {
             document.getElementById('skeleton-loader').classList.add('hidden');
@@ -260,7 +268,6 @@
             const contentDiv = document.getElementById('question-content');
             const skeletonDiv = document.getElementById('skeleton-loader');
             
-            // Fade In Effect
             contentDiv.classList.remove('hidden');
             skeletonDiv.classList.add('hidden');
             // Trigger reflow/animation
@@ -313,6 +320,10 @@
                     const btn = document.createElement('button');
                     btn.className = 'w-full text-left p-4 rounded-xl bg-slate-700/50 hover:bg-slate-600 border border-slate-600 hover:border-blue-400 transition-all duration-200 font-medium text-lg flex justify-between items-center group option-btn shadow-sm text-white relative overflow-hidden';
                     btn.innerHTML = `<span class="relative z-10">${opt.option_text}</span>`;
+                    
+                    // PENANDA JAWABAN BENAR (PENTING)
+                    btn.dataset.isCorrect = opt.is_correct; 
+                    
                     btn.onclick = () => submitSingle(opt, btn);
                     container.appendChild(btn);
                 });
@@ -379,7 +390,7 @@
             if (direction === 1 && item.nextElementSibling) parent.insertBefore(item.nextElementSibling, item);
         }
 
-        // --- SUBMIT JAWABAN (KUMPULKAN DATA) ---
+        // --- SUBMIT JAWABAN ---
         function submitSingle(opt, btn) {
             if(isAnswered) return; isAnswered = true; clearInterval(timerInterval);
             
@@ -393,6 +404,15 @@
             } else { 
                 btn.classList.add('wrong'); 
                 playSound(sfxWrong); 
+                
+                // --- 2. Perbaikan Logic: Tampilkan Kunci Jawaban jika Salah ---
+                const allBtns = document.querySelectorAll('#options-container button');
+                allBtns.forEach(b => {
+                    if(b.dataset.isCorrect == 1) {
+                        b.classList.add('correct'); 
+                        b.classList.add('correct-indicator'); 
+                    }
+                });
             }
             
             // ANIMATE SCORE
@@ -420,6 +440,7 @@
                 const correctIds = q.options.filter(o => o.is_correct).map(o => o.id);
                 if (selectedIds.length === correctIds.length && selectedIds.every(id => correctIds.includes(id))) isCorrect = true;
                 
+                // Visual Feedback
                 document.querySelectorAll('.option-item').forEach(div => {
                     const id = parseInt(div.dataset.id);
                     const isKey = correctIds.includes(id);
@@ -493,15 +514,13 @@
             document.getElementById('feedback-area').classList.remove('hidden');
         }
 
-        // FUNGSI TRANSISI NEXT QUESTION (POINT 6)
         function nextQuestion() { 
             const contentDiv = document.getElementById('question-content');
             
-            // 1. Animasi Keluar (Fade Out)
-            contentDiv.classList.add('opacity-0', 'translate-y-4'); // Tailwind utility or custom css
+            // Animasi Keluar (Fade Out)
+            contentDiv.classList.add('opacity-0', 'translate-y-4'); 
             contentDiv.classList.remove('fade-enter-active');
 
-            // 2. Tunggu animasi selesai (300ms), baru ganti data
             setTimeout(() => {
                 currentIdx++; 
                 loadQuestion();
