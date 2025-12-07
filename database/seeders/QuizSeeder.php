@@ -21,7 +21,6 @@ class QuizSeeder extends Seeder
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         // 2. Daftar Pemetaan File JSON -> Kategori Database
-        // Saya menambahkan 'jaringan.json' di sini sesuai permintaan Anda
         $files = [
             'fundamental-keamanan.json' => [
                 'slug' => 'fundamental-keamanan', 'name' => 'Fundamental Keamanan', 
@@ -42,6 +41,11 @@ class QuizSeeder extends Seeder
             'jaringan.json' => [
                 'slug' => 'pemrograman-jaringan', 'name' => 'Pemrograman Jaringan', 
                 'desc' => 'Konsep Socket, HTTP, dan Flask Python.', 'icon' => 'FiGlobe'
+            ],
+            // --- KATEGORI BARU DITAMBAHKAN ---
+            'etos-sandi-iii.json' => [
+                'slug' => 'etos-sandi-iii', 'name' => 'Etos Sandi III', 
+                'desc' => 'Wawasan kebangsaan dan etika profesi sandi.', 'icon' => 'FiShield'
             ],
         ];
 
@@ -64,61 +68,69 @@ class QuizSeeder extends Seeder
             // Baca & Decode JSON
             $questions = json_decode(File::get($path), true);
 
+            if (!$questions) {
+                $this->command->error("Gagal decode JSON: {$filename}");
+                continue;
+            }
+
             foreach ($questions as $q) {
                 // Tentukan tipe soal, default ke 'single' jika tidak ada
                 $type = $q['type'] ?? 'single';
 
-                // Masukkan Soal (Sekarang support explanation dan type)
+                // Masukkan Soal
                 $quest = Question::create([
                     'category_id' => $cat->id,
                     'question_text' => $q['question'],
                     'explanation' => $q['explanation'] ?? null,
+                    'reference' => $q['reference'] ?? null, // Tambahkan support reference jika ada di JSON
                     'type' => $type
                 ]);
 
                 // Logika Insert Opsi Berdasarkan Tipe
                 if ($type === 'matching') {
-                    // Tipe Matching: Punya pasangan (pairs)
-                    foreach ($q['pairs'] as $pair) {
-                        Option::create([
-                            'question_id' => $quest->id,
-                            'option_text' => $pair['left'],      // Kiri (Soal)
-                            'matching_pair' => $pair['right'],   // Kanan (Jawaban Pasangan)
-                            'is_correct' => true
-                        ]);
+                    // Tipe Matching
+                    if(isset($q['pairs'])) {
+                        foreach ($q['pairs'] as $pair) {
+                            Option::create([
+                                'question_id' => $quest->id,
+                                'option_text' => $pair['left'],      
+                                'matching_pair' => $pair['right'],   
+                                'is_correct' => true
+                            ]);
+                        }
                     }
                 } 
                 elseif ($type === 'ordering') {
-                    // Tipe Ordering: Menggunakan items dan urutan yang benar
-                    // Kita simpan itemsnya, correct_order diset 1, 2, 3...
-                    $items = $q['correctOrder'] ?? $q['items']; 
+                    // Tipe Ordering
+                    $items = $q['correctOrder'] ?? ($q['items'] ?? []); 
                     foreach ($items as $index => $itemText) {
                         Option::create([
                             'question_id' => $quest->id,
                             'option_text' => $itemText,
-                            'correct_order' => $index + 1, // Urutan 1, 2, 3, dst
+                            'correct_order' => $index + 1, 
                             'is_correct' => true
                         ]);
                     }
                 } 
                 else {
                     // Tipe Single & Multiple
-                    foreach ($q['options'] as $idx => $optText) {
-                        $isCorrect = false;
+                    if(isset($q['options'])) {
+                        foreach ($q['options'] as $idx => $optText) {
+                            $isCorrect = false;
 
-                        if ($type === 'multiple') {
-                            // Cek jika index ada di array jawaban benar (contoh: [0, 2])
-                            $isCorrect = in_array($idx, $q['correct']);
-                        } else {
-                            // Single choice (contoh: 2)
-                            $isCorrect = ($idx == $q['correct']);
+                            if ($type === 'multiple') {
+                                $isCorrect = in_array($idx, $q['correct']);
+                            } else {
+                                // Single choice
+                                $isCorrect = ($idx == $q['correct']);
+                            }
+
+                            Option::create([
+                                'question_id' => $quest->id,
+                                'option_text' => $optText,
+                                'is_correct' => $isCorrect
+                            ]);
                         }
-
-                        Option::create([
-                            'question_id' => $quest->id,
-                            'option_text' => $optText,
-                            'is_correct' => $isCorrect
-                        ]);
                     }
                 }
             }
