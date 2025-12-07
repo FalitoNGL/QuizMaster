@@ -219,7 +219,7 @@
             document.getElementById('btn-confirm').classList.add('hidden');
             document.getElementById('btn-confirm').disabled = true;
 
-            // 2. Handle Media (BARU)
+            // 2. Handle Media
             const imgEl = document.getElementById('q-image');
             const audioEl = document.getElementById('q-audio');
             const mediaCont = document.getElementById('media-container');
@@ -318,7 +318,7 @@
             }
         }
 
-        // VALIDASI INPUT KOMPLEKS
+        // VALIDASI INPUT KOMPLEKS (Frontend Only - For Button Enable)
         function validateComplexAnswer() {
             const q = questions[currentIdx];
             const btn = document.getElementById('btn-confirm');
@@ -348,13 +348,16 @@
             isAnswered = true;
             clearInterval(timerInterval);
             
+            // Visual Feedback Lokal
             if (opt.is_correct) {
                 btn.classList.add('correct-answer');
-                sendScore(100 + timeLeft);
-                playSound(sfxCorrect); // SFX
+                playSound(sfxCorrect); 
+                // Kirim Jawaban ke Backend (ID saja)
+                submitAnswerToBackend(opt.id);
             } else {
                 btn.classList.add('wrong-answer');
-                playSound(sfxWrong); // SFX
+                playSound(sfxWrong);
+                // Opsional: Kirim juga kalau salah
             }
             finishTurn();
         }
@@ -367,12 +370,15 @@
             
             const q = questions[currentIdx];
             let isCorrect = false;
+            let answerData = null; // Data yang akan dikirim ke backend
 
-            // Logic Pengecekan (Sama seperti Solo)
+            // Logic Pengecekan Visual Lokal & Persiapan Data Backend
             if (q.type === 'multiple') {
                 const selected = document.querySelectorAll('.option-item.selected');
                 const selectedIds = Array.from(selected).map(d => parseInt(d.dataset.id));
                 const correctIds = q.options.filter(o => o.is_correct).map(o => o.id);
+                
+                // Visual Check
                 if (selectedIds.length === correctIds.length && selectedIds.every(id => correctIds.includes(id))) isCorrect = true;
                 
                 document.querySelectorAll('.option-item').forEach(div => {
@@ -380,15 +386,29 @@
                     const isKey = correctIds.includes(id);
                     if(isKey) div.classList.add('correct-indicator');
                 });
-            } else if (q.type === 'ordering') {
+
+                answerData = selectedIds; // Kirim array ID
+            } 
+            else if (q.type === 'ordering') {
                 const items = document.querySelectorAll('.ordering-item');
                 const userOrder = Array.from(items).map(d => parseInt(d.dataset.id));
                 const correctOrder = [...q.options].sort((a,b) => a.correct_order - b.correct_order).map(o => o.id);
+                
                 if (JSON.stringify(userOrder) === JSON.stringify(correctOrder)) isCorrect = true;
-            } else if (q.type === 'matching') {
+                
+                answerData = userOrder; // Kirim array ID terurut
+            } 
+            else if (q.type === 'matching') {
                 const selects = document.querySelectorAll('.matching-select');
                 let allCorrect = true;
+                const matches = [];
+
                 selects.forEach(sel => {
+                    matches.push({
+                        left_id: parseInt(sel.dataset.leftId),
+                        pair_text: sel.value
+                    });
+
                     if (sel.value === sel.dataset.correctPair) {
                         sel.parentElement.classList.add('correct-answer');
                     } else {
@@ -397,13 +417,17 @@
                     }
                 });
                 if (allCorrect) isCorrect = true;
+
+                answerData = matches; // Kirim pasangan
             }
 
+            // Kirim ke Backend HANYA JIKA Benar (untuk menambah skor)
+            // Atau kirim selalu jika ingin mencatat statistik salah
             if (isCorrect) {
-                sendScore(150 + timeLeft);
-                playSound(sfxCorrect); // SFX
+                submitAnswerToBackend(answerData);
+                playSound(sfxCorrect);
             } else {
-                playSound(sfxWrong); // SFX
+                playSound(sfxWrong);
             }
             finishTurn();
         }
@@ -427,7 +451,7 @@
 
         function handleTimeUp() {
             isAnswered = true;
-            playSound(sfxWrong); // SFX
+            playSound(sfxWrong); 
             document.getElementById('options').classList.add('disabled-opt');
             document.getElementById('btn-confirm').classList.add('hidden');
             document.getElementById('explanation-text').innerText = "Waktu Habis!";
@@ -435,19 +459,26 @@
             setTimeout(() => { currentIdx++; loadQuestion(); }, 3000);
         }
 
-        function sendScore(points) {
-            // Note: Idealnya validasi poin dilakukan di server (backend) untuk keamanan.
+        // --- CORE FUNCTION BARU: KIRIM JAWABAN KE BACKEND ---
+        function submitAnswerToBackend(answerData) {
+            const payload = {
+                room_code: roomCode,
+                question_id: questions[currentIdx].id,
+                time_left: timeLeft,
+                answer: answerData 
+            };
+
             fetch("{{ route('live.score') }}", {
                 method: "POST", 
                 headers: { "Content-Type": "application/json", "X-CSRF-TOKEN": "{{ csrf_token() }}" },
-                body: JSON.stringify({ room_code: roomCode, points: points })
-            }).catch(err => console.log(err));
+                body: JSON.stringify(payload)
+            }).catch(err => console.error("Gagal kirim jawaban:", err));
         }
 
         function finishGameTrigger() {
             document.getElementById('game-screen').classList.add('hidden');
             document.getElementById('result-screen').classList.remove('hidden');
-            playSound(sfxFinish); // SFX
+            playSound(sfxFinish); 
             fetch("{{ route('live.finish') }}", {
                 method: "POST", 
                 headers: { "Content-Type": "application/json", "X-CSRF-TOKEN": "{{ csrf_token() }}" },
@@ -471,7 +502,7 @@
             if (data.winner_id == myId) { 
                 title.innerText = "🏆 KAMU MENANG!"; 
                 title.className = "text-4xl font-extrabold mb-2 text-green-400 animate-bounce"; 
-                playSound(sfxFinish); // Pastikan bunyi
+                playSound(sfxFinish); 
             } else if (data.winner_id === null) { 
                 title.innerText = "🤝 SERI!"; 
                 title.className = "text-4xl font-extrabold mb-2 text-blue-400"; 
