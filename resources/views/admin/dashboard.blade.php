@@ -67,6 +67,10 @@
             <h2 class="text-xl font-bold border-l-4 border-yellow-500 pl-3">Manajemen Bank Soal</h2>
             
             <div class="flex gap-3">
+                <a href="{{ route('admin.cleanup') }}" onclick="return confirm('Yakin ingin menghapus semua soal ganda? Proses ini tidak bisa dibatalkan.')" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-bold shadow-lg flex items-center gap-2 transition transform hover:scale-105" title="Hapus Soal Ganda">
+                    <i class="fas fa-broom"></i> Bersihkan Duplikat
+                </a>
+
                 <a href="{{ route('admin.categories') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold shadow-lg flex items-center gap-2 transition transform hover:scale-105">
                     <i class="fas fa-tags"></i> Kategori
                 </a>
