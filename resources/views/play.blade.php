@@ -38,7 +38,7 @@
                 </div>
             </div>
             <div class="text-right">
-                <div class="text-xs text-slate-400">SKOR</div>
+                <div class="text-xs text-slate-400">ESTIMASI SKOR</div>
                 <div id="score-display" class="font-mono text-xl font-bold text-blue-400">0</div>
             </div>
         </div>
@@ -87,7 +87,7 @@
 
             <div class="grid grid-cols-4 gap-2 mb-8 bg-slate-900/50 p-4 rounded-xl border border-slate-700 text-center">
                 <div>
-                    <div class="text-[10px] uppercase text-slate-500 font-bold">Skor</div>
+                    <div class="text-[10px] uppercase text-slate-500 font-bold">Skor Akhir</div>
                     <div class="text-xl md:text-2xl font-bold text-yellow-400" id="final-score">0</div>
                 </div>
                 <div>
@@ -110,9 +110,9 @@
             </div>
 
             <div id="save-section">
-                <input type="text" id="player-name" placeholder="Ketik Nama Kamu" class="w-full bg-slate-700 px-4 py-3 rounded-xl mb-4 text-center text-white border border-slate-600 focus:border-blue-500 outline-none transition placeholder-slate-400">
+                <input type="text" id="player-name" value="{{ session('current_player', '') }}" placeholder="Ketik Nama Kamu" class="w-full bg-slate-700 px-4 py-3 rounded-xl mb-4 text-center text-white border border-slate-600 focus:border-blue-500 outline-none transition placeholder-slate-400">
                 <button onclick="saveScore()" id="btn-save" class="w-full bg-green-600 hover:bg-green-500 py-3 rounded-xl font-bold text-white shadow-lg mb-3 transition transform hover:scale-105">
-                    <i class="fas fa-save mr-2"></i> Simpan Skor
+                    <i class="fas fa-save mr-2"></i> Simpan & Lihat Hasil
                 </button>
             </div>
             
@@ -134,25 +134,15 @@
 
     <div id="shareable-ticket" class="fixed left-[-9999px] top-0 w-[400px] bg-gradient-to-br from-slate-800 to-slate-900 p-8 rounded-3xl border-4 border-blue-500/50 text-center shadow-2xl text-white font-sans relative overflow-hidden">
         <div class="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
-        <div class="absolute -top-10 -left-10 w-32 h-32 bg-blue-500 rounded-full filter blur-3xl opacity-30"></div>
-        <div class="absolute -bottom-10 -right-10 w-32 h-32 bg-purple-500 rounded-full filter blur-3xl opacity-30"></div>
-        
         <div class="relative z-10">
             <div class="text-sm uppercase tracking-widest text-blue-400 mb-2 font-bold">Quiz Master Result</div>
             <h1 class="text-3xl font-extrabold mb-1 text-white">{{ $category->name }}</h1>
             <div class="text-6xl mb-4 animate-bounce mt-4" id="share-emoji">🎉</div>
             <h2 class="text-2xl font-bold text-yellow-400 mb-6" id="share-grade-title">LEGENDARY!</h2>
-
             <div class="bg-slate-900/80 rounded-2xl p-6 border border-slate-700 mb-6">
                 <div class="text-sm text-slate-400 uppercase font-bold">Total Skor</div>
                 <div class="text-5xl font-extrabold text-white mb-4" id="share-score">0</div>
-                <div class="grid grid-cols-3 gap-2 text-sm border-t border-slate-700 pt-4">
-                   <div><div class="font-bold text-blue-400" id="share-percentage">0%</div><div class="text-slate-500 text-[10px]">Akurasi</div></div>
-                   <div><div class="font-bold text-green-400" id="share-correct">0</div><div class="text-slate-500 text-[10px]">Benar</div></div>
-                   <div><div class="font-bold text-red-400" id="share-wrong">0</div><div class="text-slate-500 text-[10px]">Salah</div></div>
-                </div>
             </div>
-
             <div class="text-slate-400 text-sm">
                 Pemain: <span class="font-bold text-white" id="share-player-name">-</span>
             </div>
@@ -165,12 +155,8 @@
     <div id="share-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm animate-fade-up">
         <div class="bg-slate-800 p-6 rounded-3xl max-w-sm w-full text-center border border-slate-700 relative">
             <h3 class="text-xl font-bold text-white mb-4">Siap Dibagikan!</h3>
-            <p class="text-sm text-slate-400 mb-4">Tekan tahan gambar di bawah untuk menyimpan atau membagikannya.</p>
-            <div id="generated-image-container" class="mb-4 rounded-2xl overflow-hidden border-2 border-blue-500/50 shadow-lg">
-                </div>
-            <button onclick="closeShareModal()" class="bg-slate-700 hover:bg-slate-600 text-white py-2 px-6 rounded-full font-bold transition w-full">
-                Tutup
-            </button>
+            <div id="generated-image-container" class="mb-4 rounded-2xl overflow-hidden border-2 border-blue-500/50 shadow-lg"></div>
+            <button onclick="closeShareModal()" class="bg-slate-700 hover:bg-slate-600 text-white py-2 px-6 rounded-full font-bold transition w-full">Tutup</button>
         </div>
     </div>
 
@@ -183,12 +169,14 @@
         const questions = @json($questions);
         const configTimer = {{ $timer }};
         let currentIdx = 0;
-        let score = 0;
+        let estimatedScore = 0;
         let timeLeft = configTimer;
         let timerInterval;
         let isAnswered = false;
-        let userAnswers = [];
-        let correctCount = 0;
+        
+        // Penampung Jawaban User (Untuk dikirim ke Server)
+        let userAnswers = []; 
+        let estimatedCorrect = 0; // Hanya untuk visual
 
         const sfxCorrect = document.getElementById('sfx-correct');
         const sfxWrong = document.getElementById('sfx-wrong');
@@ -196,7 +184,6 @@
         const sfxBadge = document.getElementById('sfx-badge');
         
         function playSound(el) { el.currentTime = 0; el.play().catch(()=>{}); }
-
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -219,6 +206,7 @@
             document.getElementById('options-container').classList.remove('disabled-opt');
             document.getElementById('instruction-text').innerText = "";
 
+            // Media Handle
             const imgEl = document.getElementById('q-image');
             const audioEl = document.getElementById('q-audio');
             const mediaCont = document.getElementById('media-container');
@@ -226,6 +214,7 @@
             if(q.image_path) { imgEl.src = "/storage/" + q.image_path; imgEl.classList.remove('hidden'); mediaCont.classList.remove('hidden'); }
             if(q.audio_path) { audioEl.src = "/storage/" + q.audio_path; audioEl.classList.remove('hidden'); mediaCont.classList.remove('hidden'); }
 
+            // Timer
             if (configTimer > 0) {
                 timeLeft = configTimer;
                 document.getElementById('timer-display').innerText = timeLeft;
@@ -237,9 +226,9 @@
                 }, 1000);
             } else {
                 document.getElementById('timer-display').innerText = "∞";
-                clearInterval(timerInterval);
             }
 
+            // Options
             const container = document.getElementById('options-container');
             container.innerHTML = '';
             const btnConfirm = document.getElementById('btn-confirm');
@@ -252,7 +241,6 @@
                 displayOptions.forEach(opt => {
                     const btn = document.createElement('button');
                     btn.className = 'w-full text-left p-4 rounded-xl bg-slate-700 hover:bg-slate-600 border-2 border-transparent transition font-medium text-lg flex justify-between items-center group option-btn shadow-sm text-white';
-                    btn.dataset.correct = opt.is_correct;
                     btn.innerHTML = `<span>${opt.option_text}</span>`;
                     btn.onclick = () => submitSingle(opt, btn);
                     container.appendChild(btn);
@@ -265,7 +253,8 @@
                     const div = document.createElement('div');
                     div.className = 'option-item w-full text-left p-4 rounded-xl border border-slate-600 bg-slate-800 hover:bg-slate-700 transition mb-2 cursor-pointer flex items-center gap-3 shadow-sm text-white';
                     div.innerHTML = `<div class="w-6 h-6 border-2 border-slate-400 rounded flex items-center justify-center"><i class="fas fa-check text-transparent transition check-icon"></i></div> <span>${opt.option_text}</span>`;
-                    div.dataset.id = opt.id; div.dataset.correct = opt.is_correct;
+                    div.dataset.id = opt.id; 
+                    div.dataset.correct = opt.is_correct; // Visual only
                     div.onclick = () => {
                         div.classList.toggle('selected');
                         div.querySelector('.check-icon').classList.toggle('text-transparent');
@@ -319,12 +308,27 @@
             if (direction === 1 && item.nextElementSibling) parent.insertBefore(item.nextElementSibling, item);
         }
 
+        // --- SUBMIT JAWABAN (KUMPULKAN DATA) ---
         function submitSingle(opt, btn) {
             if(isAnswered) return; isAnswered = true; clearInterval(timerInterval);
-            const isCorrect = opt.is_correct == 1;
-            userAnswers.push({ question_id: questions[currentIdx].id, option_id: opt.id, is_correct: isCorrect ? 1 : 0 });
-            if (isCorrect) { btn.classList.add('correct'); score += 100 + (configTimer > 0 ? timeLeft : 0); correctCount++; playSound(sfxCorrect); }
-            else { btn.classList.add('wrong'); playSound(sfxWrong); document.querySelectorAll('.option-btn').forEach(b => { if(b.dataset.correct == "1") b.classList.add('correct-indicator'); }); }
+            
+            const isCorrect = opt.is_correct == 1; // Visual Only
+            if (isCorrect) { 
+                btn.classList.add('correct'); 
+                estimatedScore += 100; estimatedCorrect++; 
+                playSound(sfxCorrect); 
+            } else { 
+                btn.classList.add('wrong'); 
+                playSound(sfxWrong); 
+            }
+            
+            // SIMPAN DATA UTK DIKIRIM KE SERVER
+            userAnswers.push({ 
+                question_id: questions[currentIdx].id, 
+                answer: opt.id, // ID Jawaban
+                time_left: timeLeft 
+            });
+            
             finishTurn();
         }
 
@@ -332,38 +336,57 @@
             if(isAnswered) return; isAnswered = true; clearInterval(timerInterval);
             const q = questions[currentIdx];
             let isCorrect = false;
+            let answerData = null; // Ini yang dikirim ke server
+
             if (q.type === 'multiple') {
                 const selected = document.querySelectorAll('.option-item.selected');
                 const selectedIds = Array.from(selected).map(d => parseInt(d.dataset.id));
                 const correctIds = q.options.filter(o => o.is_correct).map(o => o.id);
                 if (selectedIds.length === correctIds.length && selectedIds.every(id => correctIds.includes(id))) isCorrect = true;
+                
+                // Visual Feedback
                 document.querySelectorAll('.option-item').forEach(div => {
-                    const id = parseInt(div.dataset.id); const isKey = correctIds.includes(id); const isSelected = selectedIds.includes(id);
-                    if(isKey) div.classList.add('correct-indicator'); if(isSelected && !isKey) div.classList.add('wrong'); if(isSelected && isKey) div.classList.add('correct');
+                    const id = parseInt(div.dataset.id);
+                    const isKey = correctIds.includes(id);
+                    if(isKey) div.classList.add('correct-indicator');
                 });
-            } else if (q.type === 'ordering') {
+                answerData = selectedIds; // Array ID
+            } 
+            else if (q.type === 'ordering') {
                 const items = document.querySelectorAll('.ordering-item');
                 const userOrder = Array.from(items).map(d => parseInt(d.dataset.id));
                 const correctOrder = [...q.options].sort((a,b) => a.correct_order - b.correct_order).map(o => o.id);
-                if (JSON.stringify(userOrder) === JSON.stringify(correctOrder)) { isCorrect = true; items.forEach(div => div.classList.add('correct')); }
-                else { items.forEach(div => div.classList.add('wrong')); }
-            } else if (q.type === 'matching') {
+                if (JSON.stringify(userOrder) === JSON.stringify(correctOrder)) isCorrect = true;
+                answerData = userOrder; // Array ID urut
+            } 
+            else if (q.type === 'matching') {
                 const selects = document.querySelectorAll('.matching-select');
                 let allCorrect = true;
+                const matches = [];
                 selects.forEach(sel => {
+                    matches.push({ left_id: parseInt(sel.dataset.leftId), pair_text: sel.value });
                     if (sel.value === sel.dataset.correctPair) sel.parentElement.classList.add('correct');
                     else { sel.parentElement.classList.add('wrong'); allCorrect = false; }
                 });
                 if (allCorrect) isCorrect = true;
+                answerData = matches; // Array Object
             }
-            userAnswers.push({ question_id: q.id, option_id: 0, is_correct: isCorrect ? 1 : 0 });
-            if (isCorrect) { score += 150 + (configTimer > 0 ? timeLeft : 0); correctCount++; playSound(sfxCorrect); }
+
+            if (isCorrect) { estimatedScore += 150; estimatedCorrect++; playSound(sfxCorrect); }
             else { playSound(sfxWrong); }
+
+            // SIMPAN DATA
+            userAnswers.push({ 
+                question_id: q.id, 
+                answer: answerData, 
+                time_left: timeLeft 
+            });
+
             finishTurn();
         }
 
         function finishTurn() {
-            document.getElementById('score-display').innerText = score;
+            document.getElementById('score-display').innerText = estimatedScore;
             document.getElementById('options-container').classList.add('disabled-opt');
             document.getElementById('btn-confirm').classList.add('hidden');
             const q = questions[currentIdx];
@@ -377,71 +400,78 @@
             isAnswered = true; playSound(sfxWrong);
             document.getElementById('options-container').classList.add('disabled-opt');
             document.getElementById('btn-confirm').classList.add('hidden');
-            const q = questions[currentIdx];
-            userAnswers.push({ question_id: q.id, option_id: 0, is_correct: 0 });
+            
+            // Push jawaban kosong/null karena waktu habis
+            userAnswers.push({ 
+                question_id: questions[currentIdx].id, 
+                answer: null, 
+                time_left: 0 
+            });
+
             document.getElementById('explanation-text').innerText = "Waktu Habis!";
             document.getElementById('feedback-area').classList.remove('hidden');
         }
 
         function nextQuestion() { currentIdx++; loadQuestion(); }
 
-        // --- FINISH QUIZ & RESULT ---
+        // --- FINISH & SAVE ---
         function finishQuiz() {
             document.getElementById('quiz-card').classList.add('hidden');
             document.getElementById('result-card').classList.remove('hidden');
             playSound(sfxFinish);
 
-            // HITUNG PERSENTASE
-            const totalQ = questions.length;
-            const wrongCount = totalQ - correctCount;
-            const percentage = totalQ > 0 ? Math.round((correctCount / totalQ) * 100) : 0;
+            // Update UI dengan Estimasi sementara
+            updateResultUI(estimatedScore, estimatedCorrect, questions.length);
+        }
 
-            // UPDATE UI HASIL UTAMA
-            document.getElementById('final-score').innerText = score;
-            document.getElementById('final-correct').innerText = correctCount;
-            document.getElementById('final-wrong').innerText = wrongCount;
+        function updateResultUI(scoreVal, correctVal, totalVal) {
+            const wrongVal = totalVal - correctVal;
+            const percentage = totalVal > 0 ? Math.round((correctVal / totalVal) * 100) : 0;
+            
+            document.getElementById('final-score').innerText = scoreVal;
+            document.getElementById('final-correct').innerText = correctVal;
+            document.getElementById('final-wrong').innerText = wrongVal;
             document.getElementById('final-percentage').innerText = percentage + "%";
-
-            // Tentukan Grade (Title, Subtitle, Emoji)
+            
             let title, subtitle, emoji;
-            if (percentage === 100) { title = "LEGENDARY!"; subtitle = "Sempurna! Kamu master materi ini."; emoji = "👑"; }
-            else if (percentage >= 85) { title = "LUAR BIASA!"; subtitle = "Hampir sempurna, pertahankan!"; emoji = "🔥"; }
-            else if (percentage >= 70) { title = "HEBAT!"; subtitle = "Hasil yang sangat bagus."; emoji = "😎"; }
-            else if (percentage >= 55) { title = "BAGUS"; subtitle = "Cukup baik, tingkatkan lagi."; emoji = "👍"; }
-            else if (percentage >= 40) { title = "CUKUP"; subtitle = "Perlu lebih banyak latihan."; emoji = "🤔"; }
-            else { title = "JANGAN MENYERAH"; subtitle = "Ayo coba lagi, kamu pasti bisa!"; emoji = "💪"; }
+            if (percentage === 100) { title = "LEGENDARY!"; subtitle = "Sempurna!"; emoji = "👑"; }
+            else if (percentage >= 85) { title = "LUAR BIASA!"; subtitle = "Hampir sempurna!"; emoji = "🔥"; }
+            else if (percentage >= 70) { title = "HEBAT!"; subtitle = "Hasil bagus."; emoji = "😎"; }
+            else if (percentage >= 55) { title = "BAGUS"; subtitle = "Tingkatkan lagi."; emoji = "👍"; }
+            else { title = "SEMANGAT!"; subtitle = "Jangan menyerah!"; emoji = "💪"; }
 
             document.getElementById('grade-title').innerText = title;
             document.getElementById('grade-subtitle').innerText = subtitle;
             document.getElementById('grade-emoji').innerText = emoji;
 
-            // UPDATE UI TIKET SHARE (Hidden)
-            document.getElementById('share-score').innerText = score;
-            document.getElementById('share-percentage').innerText = percentage + "%";
-            document.getElementById('share-correct').innerText = correctCount;
-            document.getElementById('share-wrong').innerText = wrongCount;
+            // Update Tiket Share (Hidden)
+            document.getElementById('share-score').innerText = scoreVal;
             document.getElementById('share-grade-title').innerText = title;
             document.getElementById('share-emoji').innerText = emoji;
 
-            // Efek Confetti jika lulus (di atas 55%)
-            if (percentage >= 55) {
-                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-            }
+            if (percentage >= 55) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
         }
         
         function saveScore() {
             const name = document.getElementById('player-name').value;
             if(!name) { alert("Isi nama dulu!"); return; }
-            // Update nama di tiket share juga
             document.getElementById('share-player-name').innerText = name;
             
             const btnSave = document.getElementById('btn-save');
-            btnSave.disabled = true; btnSave.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Menyimpan...';
+            btnSave.disabled = true; btnSave.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Memvalidasi...';
 
+            // KIRIM JAWABAN KE SERVER UNTUK DIVALIDASI
             fetch("{{ route('quiz.submit') }}", {
                 method: "POST", headers: { "Content-Type": "application/json", "X-CSRF-TOKEN": "{{ csrf_token() }}" },
-                body: JSON.stringify({ category_id: {{ $category->id }}, player_name: name, score: score, correct: correctCount, total: questions.length, answers: userAnswers })
+                body: JSON.stringify({ 
+                    category_id: {{ $category->id }}, 
+                    player_name: name, 
+                    answers: userAnswers // Kirim data lengkap
+                })
             }).then(res => res.json()).then(data => {
+                // UPDATE UI DENGAN SKOR RESMI DARI SERVER
+                updateResultUI(data.real_score, data.correct_count, questions.length);
+                
                 document.getElementById('save-section').classList.add('hidden');
                 document.getElementById('after-save-actions').classList.remove('hidden');
                 document.getElementById('btn-review-link').href = "/review/" + data.result_id;
@@ -451,6 +481,7 @@
                     const badgeList = document.getElementById('badge-list');
                     badgeContainer.classList.remove('hidden');
                     playSound(sfxBadge);
+                    badgeList.innerHTML = '';
                     data.new_badges.forEach(badgeName => {
                         const badgeEl = document.createElement('span');
                         badgeEl.className = "bg-yellow-500 text-slate-900 px-3 py-1 rounded-full font-bold text-xs shadow badge-pop flex items-center";
@@ -459,49 +490,30 @@
                     });
                 }
             }).catch(err => {
-                console.error(err); alert("Gagal menyimpan."); btnSave.disabled = false; btnSave.innerText = 'Simpan Skor';
+                console.error(err); alert("Gagal menyimpan."); btnSave.disabled = false; btnSave.innerText = 'Simpan & Lihat Hasil';
             });
         }
 
-        // --- FUNGSI GENERATE GAMBAR SHARE ---
+        // --- SHARE IMAGE GENERATOR ---
         function generateShareImage() {
             const ticket = document.getElementById('shareable-ticket');
             const modal = document.getElementById('share-modal');
             const container = document.getElementById('generated-image-container');
             const btnShare = document.getElementById('btn-share-img');
 
-            btnShare.disabled = true;
-            btnShare.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Membuat Gambar...';
+            btnShare.disabled = true; btnShare.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Membuat...';
 
-            // Gunakan html2canvas untuk 'memotret' elemen tiket yang tersembunyi
-            html2canvas(ticket, {
-                backgroundColor: null, // Transparan agar background gradient ikut
-                scale: 2 // Kualitas retina (lebih tajam)
-            }).then(canvas => {
-                // Konversi canvas ke gambar PNG
-                const imgData = canvas.toDataURL("image/png");
+            html2canvas(ticket, { backgroundColor: null, scale: 2 }).then(canvas => {
                 const img = new Image();
-                img.src = imgData;
+                img.src = canvas.toDataURL("image/png");
                 img.className = "w-full h-auto object-contain";
-
-                // Tampilkan di modal
-                container.innerHTML = '';
-                container.appendChild(img);
+                container.innerHTML = ''; container.appendChild(img);
                 modal.classList.remove('hidden');
-                
-                btnShare.disabled = false;
-                btnShare.innerHTML = '<i class="fas fa-camera mr-2"></i> Share Gambar';
-            }).catch(err => {
-                console.error("Gagal generate gambar:", err);
-                alert("Maaf, gagal membuat gambar. Coba lagi nanti.");
-                btnShare.disabled = false;
-                btnShare.innerHTML = '<i class="fas fa-camera mr-2"></i> Share Gambar';
+                btnShare.disabled = false; btnShare.innerHTML = '<i class="fas fa-camera mr-2"></i> Share Gambar';
             });
         }
 
-        function closeShareModal() {
-            document.getElementById('share-modal').classList.add('hidden');
-        }
+        function closeShareModal() { document.getElementById('share-modal').classList.add('hidden'); }
     </script>
 </body>
 </html>

@@ -14,201 +14,212 @@ use Illuminate\Support\Facades\Auth;
 
 class QuizController extends Controller
 {
-    /**
-     * HALAMAN MENU UTAMA
-     * Mengirim data kategori beserta jumlah soalnya untuk keperluan modal konfigurasi.
-     */
     public function index()
     {
-        // Ambil kategori dengan jumlah soal (untuk batas max slider di frontend)
         $categories = Category::withCount('questions')->get();
-        
-        // Sinkronisasi nama session dengan Auth jika user login
         if(Auth::check()) {
             session(['current_player' => Auth::user()->name]);
         }
-        
         return view('menu', ['categories' => $categories]);
     }
 
-    /**
-     * HALAMAN MAIN KUIS (SOLO)
-     * Menangani konfigurasi custom (jumlah soal & waktu) dari modal menu.
-     */
     public function show($slug, Request $request)
     {
         $category = Category::where('slug', $slug)->firstOrFail();
-        
-        // KONFIGURASI DARI MODAL (URL Parameters)
-        // Ambil parameter 'limit' (jumlah soal), default 10
         $limit = $request->input('limit', 10); 
-        
-        // Ambil parameter 'timer' (waktu per soal), default 30 detik. 
-        // Jika 0 berarti mode santai (tanpa waktu).
         $timer = $request->input('timer', 30); 
 
-        // Ambil Soal secara acak sejumlah limit yang diminta
+        // Ambil soal (sembunyikan field is_correct jika ingin sangat ketat, 
+        // tapi untuk single page app sederhana kita biarkan agar frontend mudah menghandle visual)
         $questions = Question::with('options')
                         ->where('category_id', $category->id)
                         ->inRandomOrder()
                         ->take($limit)
                         ->get();
 
-        // Kirim data ke view 'play'
         return view('play', compact('category', 'questions', 'timer'));
     }
 
-    /**
-     * HALAMAN LEADERBOARD
-     */
     public function leaderboard()
     {
         $topScores = Result::with('category')
                         ->orderBy('score', 'desc')
                         ->take(20)
                         ->get();
-
         return view('leaderboard', compact('topScores'));
     }
 
-    /**
-     * HALAMAN PEMBAHASAN (REVIEW)
-     */
     public function review($id)
     {
-        // Ambil data hasil kuis beserta detail jawaban user dan opsi aslinya
         $result = Result::with(['category', 'answers.question.options', 'answers.option'])
                         ->findOrFail($id);
-
         return view('review', compact('result'));
     }
 
     /**
-     * PROSES SIMPAN SKOR (SUBMIT)
-     * Menangani validasi, penyimpanan skor, detail jawaban, dan pengecekan achievement.
+     * PROSES SIMPAN SKOR (SECURE VERSION)
+     * Menghitung skor di server berdasarkan jawaban user.
      */
     public function submit(Request $request)
     {
-        // 1. Validasi Input
+        // 1. Validasi Input (Hanya data esensial)
         $data = $request->validate([
             'category_id' => 'required|exists:categories,id',
             'player_name' => 'required|string|max:50',
-            'score' => 'required|integer',
-            'correct' => 'required|integer',
-            'total' => 'required|integer',
-            'answers' => 'required|array', // Array jawaban detail dari JS
+            'answers' => 'required|array', // Array jawaban dari JS
         ]);
 
-        // 2. Tentukan User (Login vs Tamu)
+        // 2. Tentukan User
         $userId = null;
         if (Auth::check()) {
             $userId = Auth::id();
-            // Jika login, paksa pakai nama akun asli agar konsisten
             $data['player_name'] = Auth::user()->name; 
         }
-        
-        // Simpan nama di session untuk keperluan lain (misal: sertifikat nanti)
         session(['current_player' => $data['player_name']]);
 
-        // 3. Simpan Header Hasil (Skor Total) ke tabel 'results'
+        // 3. LOGIKA HITUNG SKOR (SERVER-SIDE)
+        $calculatedScore = 0;
+        $correctCount = 0;
+        $totalQuestions = count($data['answers']);
+        $processedAnswers = []; // Penampung untuk disimpan ke DB
+
+        foreach ($data['answers'] as $ans) {
+            $question = Question::with('options')->find($ans['question_id']);
+            if (!$question) continue;
+
+            $isCorrect = false;
+            $userAnswerVal = $ans['answer'] ?? null; 
+            $timeLeft = $ans['time_left'] ?? 0; // Bonus waktu
+
+            // A. Single Choice
+            if ($question->type === 'single') {
+                $opt = $question->options->where('id', $userAnswerVal)->first();
+                $isCorrect = $opt && $opt->is_correct;
+                // Simpan ID opsi untuk referensi
+                $saveOptionId = $userAnswerVal;
+            } 
+            // B. Multiple Choice
+            elseif ($question->type === 'multiple' && is_array($userAnswerVal)) {
+                $correctIds = $question->options->where('is_correct', 1)->pluck('id')->toArray();
+                sort($userAnswerVal); 
+                sort($correctIds);
+                $isCorrect = $userAnswerVal == $correctIds;
+                $saveOptionId = 0; // 0 menandakan jawaban kompleks
+            }
+            // C. Ordering
+            elseif ($question->type === 'ordering' && is_array($userAnswerVal)) {
+                $correctSequence = $question->options->sortBy('correct_order')->pluck('id')->toArray();
+                $isCorrect = array_values($userAnswerVal) === array_values($correctSequence);
+                $saveOptionId = 0;
+            }
+            // D. Matching
+            elseif ($question->type === 'matching' && is_array($userAnswerVal)) {
+                $allMatch = true;
+                foreach ($userAnswerVal as $item) {
+                    // $item structure: {left_id: 1, pair_text: 'Jawab A'}
+                    $opt = $question->options->where('id', $item['left_id'])->first();
+                    if (!$opt || $opt->matching_pair !== $item['pair_text']) {
+                        $allMatch = false;
+                        break;
+                    }
+                }
+                $isCorrect = $allMatch;
+                $saveOptionId = 0;
+            } else {
+                // Tipe tidak dikenal atau format salah
+                $isCorrect = false;
+                $saveOptionId = null;
+            }
+
+            // Hitung Poin: 100 + Sisa Waktu (Hanya jika benar)
+            if ($isCorrect) {
+                $calculatedScore += 100 + $timeLeft;
+                $correctCount++;
+            }
+
+            // Siapkan data untuk result_answers
+            $processedAnswers[] = [
+                'question_id' => $question->id,
+                'option_id' => $saveOptionId,
+                'is_correct' => $isCorrect
+            ];
+        }
+
+        // 4. Simpan Header Hasil
         $result = Result::create([
             'user_id' => $userId,
             'player_name' => $data['player_name'],
             'category_id' => $data['category_id'],
-            'score' => $data['score'],
-            'correct_answers' => $data['correct'],
-            'total_questions' => $data['total'],
+            'score' => $calculatedScore, // Skor hasil hitungan server
+            'correct_answers' => $correctCount,
+            'total_questions' => $totalQuestions,
         ]);
 
-        // 4. Simpan Detail Jawaban ke tabel 'result_answers'
-        foreach ($data['answers'] as $ans) {
-            // HANDLING KHUSUS: Soal Kompleks (Ordering/Multiple/Matching)
-            // Jika option_id dikirim 0 oleh frontend (karena jawaban kompleks tidak merujuk 1 opsi spesifik),
-            // kita cari opsi pertama dari soal tersebut sebagai placeholder agar tidak error Foreign Key.
-            if ($ans['option_id'] == 0) {
-                $firstOpt = Option::where('question_id', $ans['question_id'])->first();
-                $ans['option_id'] = $firstOpt ? $firstOpt->id : null;
+        // 5. Simpan Detail Jawaban
+        foreach ($processedAnswers as $pAns) {
+            $optId = $pAns['option_id'];
+            
+            // Fix foreign key constraint jika 0
+            if ($optId === 0 || $optId === null) {
+                $firstOpt = Option::where('question_id', $pAns['question_id'])->first();
+                $optId = $firstOpt ? $firstOpt->id : null;
             }
 
-            // Simpan hanya jika valid (option_id ditemukan)
-            if ($ans['option_id']) {
+            if ($optId) {
                 ResultAnswer::create([
                     'result_id' => $result->id,
-                    'question_id' => $ans['question_id'],
-                    'option_id' => $ans['option_id'],
-                    'is_correct' => $ans['is_correct'],
+                    'question_id' => $pAns['question_id'],
+                    'option_id' => $optId,
+                    'is_correct' => $pAns['is_correct'],
                 ]);
             }
         }
 
-        // 5. Cek & Unlock Achievements (Piala)
-        $newBadges = $this->checkAchievements($data['player_name'], $userId, $data);
+        // 6. Cek Achievements
+        // Kita bungkus data agar sesuai parameter checkAchievements
+        $achievData = [
+            'score' => $calculatedScore,
+            'correct' => $correctCount,
+            'total' => $totalQuestions
+        ];
+        $newBadges = $this->checkAchievements($data['player_name'], $userId, $achievData);
 
-        // Kembalikan response JSON agar frontend bisa redirect ke halaman review/menu
         return response()->json([
             'message' => 'Skor berhasil disimpan!',
             'result_id' => $result->id,
-            'new_badges' => $newBadges
+            'new_badges' => $newBadges,
+            'real_score' => $calculatedScore, // Kembalikan skor asli ke frontend
+            'correct_count' => $correctCount
         ]);
     }
 
-    /**
-     * LOGIKA ACHIEVEMENTS INTERNAL
-     */
     private function checkAchievements($player, $userId, $data)
     {
         $newBadges = [];
         
-        // Hitung total main (berdasarkan User ID jika login, atau Nama jika tamu)
         $query = Result::query();
-        if ($userId) {
-            $query->where('user_id', $userId);
-        } else {
-            $query->where('player_name', $player);
-        }
+        if ($userId) $query->where('user_id', $userId);
+        else $query->where('player_name', $player);
+        
         $totalGames = $query->count();
 
-        // Cek Badge: Newbie (Main 1x)
-        if ($totalGames == 1) {
-            $this->unlockBadge($player, $userId, 'newbie', $newBadges);
-        }
-
-        // Cek Badge: Veteran (Main > 5x)
-        if ($totalGames > 5) {
-            $this->unlockBadge($player, $userId, 'veteran', $newBadges);
-        }
-
-        // Cek Badge: Sharpshooter (Benar Semua)
-        if ($data['correct'] == $data['total'] && $data['total'] > 0) {
-            $this->unlockBadge($player, $userId, 'sharpshooter', $newBadges);
-        }
-
-        // Cek Badge: Speedster (Skor > 1000)
-        if ($data['score'] > 1000) {
-            $this->unlockBadge($player, $userId, 'speedster', $newBadges);
-        }
+        if ($totalGames == 1) $this->unlockBadge($player, $userId, 'newbie', $newBadges);
+        if ($totalGames > 5) $this->unlockBadge($player, $userId, 'veteran', $newBadges);
+        if ($data['correct'] == $data['total'] && $data['total'] > 0) $this->unlockBadge($player, $userId, 'sharpshooter', $newBadges);
+        if ($data['score'] > 1000) $this->unlockBadge($player, $userId, 'speedster', $newBadges);
 
         return $newBadges;
     }
 
-    /**
-     * FUNGSI HELPER UNTUK MEMBERIKAN BADGE KE DB
-     */
     private function unlockBadge($player, $userId, $slug, &$newBadges)
     {
-        // Cari badge berdasarkan slug
         $badge = Achievement::where('slug', $slug)->first();
         if (!$badge) return;
 
-        // Cek apakah user SUDAH punya badge ini sebelumnya?
         $query = DB::table('player_achievements')->where('achievement_id', $badge->id);
-        if ($userId) {
-            $query->where('user_id', $userId);
-        } else {
-            $query->where('player_name', $player);
-        }
+        if ($userId) $query->where('user_id', $userId);
+        else $query->where('player_name', $player);
 
-        // Jika belum punya, berikan!
         if (!$query->exists()) {
             DB::table('player_achievements')->insert([
                 'user_id' => $userId,
@@ -217,8 +228,6 @@ class QuizController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-            
-            // Masukkan nama badge ke array notifikasi
             $newBadges[] = $badge->name;
         }
     }
