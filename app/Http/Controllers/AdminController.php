@@ -9,6 +9,8 @@ use App\Models\Option;
 use App\Models\Result;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Imports\QuestionsImport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class AdminController extends Controller
 {
@@ -50,7 +52,7 @@ class AdminController extends Controller
         $labels = $chartData->pluck('category.name');
         $data = $chartData->pluck('total');
 
-        $questions = Question::with('category')->latest()->paginate(10); // Tampilkan 10 per halaman
+        $questions = Question::with('category')->latest()->paginate(10); 
         $recentActivities = Result::with('category')->latest()->take(5)->get();
 
         return view('admin.dashboard', compact(
@@ -87,7 +89,7 @@ class AdminController extends Controller
     }
 
     // ==========================================
-    // 4. IMPORT JSON (DENGAN ANTI DUPLIKAT)
+    // 4. IMPORT JSON & EXCEL
     // ==========================================
 
     public function import() {
@@ -99,66 +101,107 @@ class AdminController extends Controller
     public function processImport(Request $request) {
         $request->validate([
             'category_id' => 'required|exists:categories,id',
-            'json_file' => 'required|file|mimes:json,txt',
+            'file_import' => 'required|file|mimes:json,txt,xlsx,xls,csv',
         ]);
 
         try {
-            $file = $request->file('json_file');
-            $jsonContent = file_get_contents($file->getRealPath());
-            $data = json_decode($jsonContent, true);
+            $file = $request->file('file_import');
+            $ext = $file->getClientOriginalExtension();
 
-            if (!$data || !is_array($data)) {
-                return back()->with('error', 'Format JSON tidak valid.');
-            }
-
-            DB::beginTransaction();
-            $count = 0;
-            $skipped = 0;
-
-            foreach ($data as $item) {
-                if (!isset($item['question']) || !isset($item['options']) || !isset($item['correct'])) {
-                    continue;
-                }
-
-                // --- CEK DUPLIKAT ---
-                // Cari apakah soal yang sama persis sudah ada di kategori ini
-                $exists = Question::where('category_id', $request->category_id)
-                                  ->where('question_text', $item['question'])
-                                  ->exists();
-
-                if ($exists) {
-                    $skipped++;
-                    continue; // Lewati jika sudah ada
-                }
-                // --------------------
-
-                $q = Question::create([
-                    'category_id' => $request->category_id,
-                    'type' => 'single',
-                    'question_text' => $item['question'],
-                    'explanation' => $item['explanation'] ?? null,
-                    'reference' => $item['reference'] ?? null,
-                    'image_path' => null,
-                    'audio_path' => null,
-                ]);
-
-                foreach ($item['options'] as $idx => $optText) {
-                    $isCorrect = ($idx == $item['correct']);
-                    Option::create([
-                        'question_id' => $q->id,
-                        'option_text' => $optText,
-                        'is_correct' => $isCorrect
-                    ]);
-                }
-                $count++;
-            }
-
-            DB::commit();
+            // --- LOGIKA EXCEL ---
+            if (in_array($ext, ['xlsx', 'xls', 'csv'])) {
+                Excel::import(new QuestionsImport($request->category_id), $file);
+                return redirect()->route('admin.dashboard')->with('success', 'Import Excel Berhasil!');
+            } 
             
-            $msg = "Berhasil mengimport $count soal!";
-            if ($skipped > 0) $msg .= " ($skipped soal dilewati karena duplikat)";
+            // --- LOGIKA JSON ---
+            else {
+                $jsonContent = file_get_contents($file->getRealPath());
+                $data = json_decode($jsonContent, true);
 
-            return redirect()->route('admin.dashboard')->with('success', $msg);
+                if (!$data || !is_array($data)) {
+                    return back()->with('error', 'Format JSON tidak valid.');
+                }
+
+                DB::beginTransaction();
+                $count = 0;
+                $skipped = 0;
+
+                foreach ($data as $item) {
+                    if (!isset($item['question']) || !isset($item['options']) || !isset($item['correct'])) {
+                        continue;
+                    }
+
+                    // Cek Duplikat
+                    $exists = Question::where('category_id', $request->category_id)
+                                    ->where('question_text', $item['question'])
+                                    ->exists();
+
+                    if ($exists) {
+                        $skipped++;
+                        continue; 
+                    }
+
+                    // Simpan Soal
+                    $q = Question::create([
+                        'category_id' => $request->category_id,
+                        'type' => $item['type'] ?? 'single',
+                        'question_text' => $item['question'],
+                        'explanation' => $item['explanation'] ?? null,
+                        'reference' => $item['reference'] ?? null,
+                    ]);
+
+                    // Simpan Opsi (Support Single/Multiple/Ordering/Matching)
+                    if ($q->type == 'matching') {
+                        // Jika JSON matching format 'pairs'
+                        if (isset($item['pairs'])) {
+                            foreach ($item['pairs'] as $pair) {
+                                Option::create([
+                                    'question_id' => $q->id,
+                                    'option_text' => $pair['left'],
+                                    'matching_pair' => $pair['right'],
+                                    'is_correct' => true
+                                ]);
+                            }
+                        }
+                    } elseif ($q->type == 'ordering') {
+                        // Jika JSON ordering format 'correctOrder'
+                        $items = $item['correctOrder'] ?? ($item['items'] ?? []);
+                        foreach ($items as $index => $val) {
+                            Option::create([
+                                'question_id' => $q->id,
+                                'option_text' => $val,
+                                'correct_order' => $index + 1,
+                                'is_correct' => true
+                            ]);
+                        }
+                    } else {
+                        // Single / Multiple
+                        foreach ($item['options'] as $idx => $optText) {
+                            $isCorrect = false;
+                            if (is_array($item['correct'])) {
+                                $isCorrect = in_array($idx, $item['correct']); // Multiple
+                            } else {
+                                $isCorrect = ($idx == $item['correct']); // Single
+                            }
+
+                            Option::create([
+                                'question_id' => $q->id,
+                                'option_text' => $optText,
+                                'is_correct' => $isCorrect
+                            ]);
+                        }
+                    }
+                    $count++;
+                }
+
+                DB::commit();
+                
+                $msg = "Berhasil mengimport $count soal JSON!";
+                if ($skipped > 0) $msg .= " ($skipped duplikat dilewati)";
+
+                return redirect()->route('admin.dashboard')->with('success', $msg);
+            }
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -187,17 +230,6 @@ class AdminController extends Controller
             'reference' => 'nullable|string'
         ]);
 
-        // Validasi Opsi
-        if ($request->type == 'single') {
-            $request->validate(['options_single' => 'required|array|min:2', 'correct_single' => 'required']);
-        } elseif ($request->type == 'multiple') {
-            $request->validate(['options_multiple' => 'required|array|min:2']);
-        } elseif ($request->type == 'ordering') {
-            $request->validate(['options_ordering' => 'required|array|min:2']);
-        } elseif ($request->type == 'matching') {
-            $request->validate(['options_matching_left' => 'required|array|min:2']);
-        }
-
         $imagePath = $request->file('image') ? $request->file('image')->store('question_images', 'public') : null;
         $audioPath = $request->file('audio') ? $request->file('audio')->store('question_audio', 'public') : null;
 
@@ -224,12 +256,17 @@ class AdminController extends Controller
                 }
             } elseif ($request->type == 'ordering') {
                 foreach ($request->options_ordering as $idx => $val) {
-                    Option::create(['question_id' => $q->id, 'option_text' => $val, 'correct_order' => $idx + 1]);
+                    Option::create(['question_id' => $q->id, 'option_text' => $val, 'correct_order' => $idx + 1, 'is_correct' => true]);
                 }
             } elseif ($request->type == 'matching') {
                 $count = count($request->options_matching_left);
                 for ($i = 0; $i < $count; $i++) {
-                    Option::create(['question_id' => $q->id, 'option_text' => $request->options_matching_left[$i], 'matching_pair' => $request->options_matching_right[$i]]);
+                    Option::create([
+                        'question_id' => $q->id, 
+                        'option_text' => $request->options_matching_left[$i], 
+                        'matching_pair' => $request->options_matching_right[$i],
+                        'is_correct' => true
+                    ]);
                 }
             }
 
@@ -269,6 +306,7 @@ class AdminController extends Controller
 
         $q->update($dataToUpdate);
 
+        // Update opsi sederhana (hanya text) untuk Single Choice
         if ($q->type == 'single' && $request->has('options')) {
             $i = 0;
             foreach ($q->options as $option) {
@@ -294,13 +332,12 @@ class AdminController extends Controller
     }
 
     // ==========================================
-    // 6. FITUR BERSIH-BERSIH (HAPUS DUPLIKAT)
+    // 6. FITUR BERSIH-BERSIH
     // ==========================================
 
     public function cleanup() {
         if (!session('is_admin')) return redirect()->route('admin.login');
 
-        // Cari duplikat: Soal dengan teks sama di kategori sama
         $duplicates = Question::select('question_text', 'category_id', DB::raw('count(*) as total'))
                         ->groupBy('question_text', 'category_id')
                         ->having('total', '>', 1)
@@ -309,14 +346,12 @@ class AdminController extends Controller
         $deletedCount = 0;
 
         foreach ($duplicates as $dup) {
-            // Ambil ID semua soal yang kembar
             $ids = Question::where('question_text', $dup->question_text)
                            ->where('category_id', $dup->category_id)
-                           ->orderBy('id', 'asc') // Urutkan dari yang terlama
+                           ->orderBy('id', 'asc')
                            ->pluck('id')
                            ->toArray();
             
-            // Simpan yang pertama (index 0), hapus sisanya (index 1 ke atas)
             $idsToDelete = array_slice($ids, 1);
             
             if (!empty($idsToDelete)) {

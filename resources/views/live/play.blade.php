@@ -21,7 +21,6 @@
 </head>
 <body class="bg-slate-900 text-white min-h-screen font-sans overflow-hidden flex flex-col">
 
-    <!-- HEADER STATUS -->
     <div class="fixed top-0 w-full bg-slate-800/90 backdrop-blur border-b border-slate-700 p-4 z-50 shadow-lg">
         <div class="max-w-5xl mx-auto flex justify-between items-center">
             <div class="flex items-center gap-3 w-1/3">
@@ -37,14 +36,12 @@
     </div>
 
     <div class="flex-grow flex items-center justify-center pt-24 pb-8 px-4">
-        <!-- LOBBY -->
         <div id="waiting-screen" class="{{ $room->status == 'waiting' ? '' : 'hidden' }} text-center max-w-md w-full bg-slate-800 p-8 rounded-2xl border border-slate-700 shadow-2xl">
             <h2 class="text-2xl font-bold text-white mb-2">Menunggu Lawan...</h2>
             <div class="bg-slate-900 p-4 rounded-xl border border-dashed border-slate-600 mb-6"><span class="text-4xl font-mono font-bold text-yellow-400 tracking-widest">{{ $room->room_code }}</span></div>
             <button onclick="window.location.reload()" class="text-sm text-blue-400 underline">Refresh</button>
         </div>
 
-        <!-- GAMEPLAY -->
         <div id="game-screen" class="{{ $room->status == 'playing' ? '' : 'hidden' }} w-full max-w-3xl">
             <div class="bg-slate-800 p-6 md:p-10 rounded-3xl border border-slate-700 shadow-2xl relative overflow-hidden">
                 <div class="flex justify-between items-start mb-6">
@@ -62,7 +59,6 @@
                     JAWAB SEKARANG
                 </button>
 
-                <!-- PEMBAHASAN -->
                 <div id="feedback-area" class="hidden mt-6 p-4 bg-slate-900 rounded-xl border-l-4 border-yellow-500 animate-slide-up relative z-20 shadow-inner">
                     <h4 class="font-bold text-yellow-400 mb-1 flex items-center gap-2"><i class="fas fa-lightbulb"></i> Pembahasan:</h4>
                     <p id="explanation-text" class="text-sm text-slate-300 mb-2 leading-relaxed"></p>
@@ -72,7 +68,6 @@
             </div>
         </div>
 
-        <!-- HASIL -->
         <div id="result-screen" class="{{ $room->status == 'finished' ? '' : 'hidden' }} text-center max-w-lg w-full bg-slate-800 p-10 rounded-3xl border border-slate-600 shadow-2xl">
             <h1 id="result-title" class="text-4xl font-extrabold mb-2 text-yellow-400">GAME SELESAI</h1>
             <p id="result-message" class="text-slate-300 text-lg mb-8">Menunggu hasil...</p>
@@ -94,6 +89,15 @@
         let timeLeft = durationPerQuestion;
         let timerInterval;
         let isAnswered = false;
+
+        // FUNGSI PENGACAK (Shuffle)
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
 
         // WEBSOCKET
         try {
@@ -146,11 +150,13 @@
 
             const optsDiv = document.getElementById('options');
             optsDiv.innerHTML = '';
-            const options = [...q.options];
+            
+            // COPY DAN ACAK OPSI UNTUK TAMPILAN
+            const displayOptions = shuffleArray([...q.options]);
 
-            // Render Opsi (Logic Render Sama dengan Solo Mode)
+            // --- A. SINGLE CHOICE ---
             if (q.type === 'single') {
-                options.sort(() => Math.random() - 0.5).forEach(opt => {
+                displayOptions.forEach(opt => {
                     const btn = document.createElement('button');
                     btn.className = 'w-full text-left p-5 rounded-xl bg-slate-700 hover:bg-slate-600 border-2 border-transparent transition font-bold text-lg flex justify-between items-center group option-btn';
                     btn.innerHTML = `<span>${opt.option_text}</span>`;
@@ -158,9 +164,12 @@
                     btn.onclick = () => submitSingle(opt, btn);
                     optsDiv.appendChild(btn);
                 });
-            } else if (q.type === 'multiple') {
+            } 
+            
+            // --- B. MULTIPLE CHOICE ---
+            else if (q.type === 'multiple') {
                 document.getElementById('btn-confirm').classList.remove('hidden');
-                options.sort(() => Math.random() - 0.5).forEach(opt => {
+                displayOptions.forEach(opt => {
                     const div = document.createElement('div');
                     div.className = 'option-item w-full text-left p-4 rounded-xl border border-gray-600 bg-slate-800 hover:bg-slate-700 transition cursor-pointer flex items-center gap-3';
                     div.innerHTML = `<div class="w-6 h-6 border-2 border-gray-400 rounded flex items-center justify-center"><i class="fas fa-check text-transparent transition check-icon"></i></div> <span>${opt.option_text}</span>`;
@@ -173,9 +182,13 @@
                     };
                     optsDiv.appendChild(div);
                 });
-            } else if (q.type === 'ordering') {
+            } 
+            
+            // --- C. ORDERING ---
+            else if (q.type === 'ordering') {
                 document.getElementById('btn-confirm').classList.remove('hidden');
-                options.sort(() => Math.random() - 0.5).forEach(opt => {
+                // displayOptions sudah diacak di atas
+                displayOptions.forEach(opt => {
                     const div = document.createElement('div');
                     div.className = 'ordering-item w-full p-3 rounded-xl border border-gray-600 bg-slate-800 mb-2 flex justify-between items-center';
                     div.dataset.id = opt.id; div.dataset.order = opt.correct_order;
@@ -183,10 +196,17 @@
                     optsDiv.appendChild(div);
                 });
                 validateComplexAnswer(); 
-            } else if (q.type === 'matching') {
+            } 
+            
+            // --- D. MATCHING ---
+            else if (q.type === 'matching') {
                 document.getElementById('btn-confirm').classList.remove('hidden');
-                const rightOptions = options.map(o => ({id: o.id, text: o.matching_pair})).sort(() => Math.random() - 0.5);
-                options.forEach(opt => {
+                
+                // Acak Opsi Kanan (Jawaban) secara terpisah
+                const rightOptions = shuffleArray(q.options.map(o => ({id: o.id, text: o.matching_pair})));
+                
+                // Render Baris Kiri (Pertanyaan) pakai displayOptions yg sudah diacak
+                displayOptions.forEach(opt => {
                     const row = document.createElement('div');
                     row.className = 'p-3 rounded-xl border border-gray-600 bg-slate-800 mb-2';
                     let selectHtml = `<select class="matching-select w-full mt-2 bg-slate-700 p-2 rounded border border-slate-500 focus:outline-none text-white" data-left-id="${opt.id}" data-correct-pair="${opt.matching_pair}" onchange="validateComplexAnswer()"><option value="">-- Pilih --</option>`;
