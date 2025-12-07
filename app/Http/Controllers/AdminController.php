@@ -99,6 +99,9 @@ class AdminController extends Controller
     }
 
     public function processImport(Request $request) {
+        // 1. SET TIME LIMIT AGAR TIDAK TIME OUT
+        set_time_limit(300); // 5 Menit (default biasanya 30 detik)
+
         $request->validate([
             'category_id' => 'required|exists:categories,id',
             'file_import' => 'required|file|mimes:json,txt,xlsx,xls,csv',
@@ -123,21 +126,24 @@ class AdminController extends Controller
                     return back()->with('error', 'Format JSON tidak valid.');
                 }
 
+                // 2. OPTIMASI: AMBIL DATA LAMA SEKALIGUS (CACHE MEMORY)
+                // Daripada cek ke DB satu per satu di dalam loop, kita ambil semua teks soal yang sudah ada
+                // di kategori ini, lalu simpan di array PHP. Pengecekan in_array() jauh lebih cepat daripada SQL Query.
+                $existingQuestions = Question::where('category_id', $request->category_id)
+                                            ->pluck('question_text')
+                                            ->toArray();
+
                 DB::beginTransaction();
                 $count = 0;
                 $skipped = 0;
 
                 foreach ($data as $item) {
-                    if (!isset($item['question']) || !isset($item['options']) || !isset($item['correct'])) {
+                    if (!isset($item['question']) || !isset($item['options'])) {
                         continue;
                     }
 
-                    // Cek Duplikat
-                    $exists = Question::where('category_id', $request->category_id)
-                                    ->where('question_text', $item['question'])
-                                    ->exists();
-
-                    if ($exists) {
+                    // CEK DUPLIKAT (Versi Cepat: Cek di RAM, bukan DB)
+                    if (in_array($item['question'], $existingQuestions)) {
                         $skipped++;
                         continue; 
                     }
@@ -153,7 +159,6 @@ class AdminController extends Controller
 
                     // Simpan Opsi (Support Single/Multiple/Ordering/Matching)
                     if ($q->type == 'matching') {
-                        // Jika JSON matching format 'pairs'
                         if (isset($item['pairs'])) {
                             foreach ($item['pairs'] as $pair) {
                                 Option::create([
@@ -165,7 +170,6 @@ class AdminController extends Controller
                             }
                         }
                     } elseif ($q->type == 'ordering') {
-                        // Jika JSON ordering format 'correctOrder'
                         $items = $item['correctOrder'] ?? ($item['items'] ?? []);
                         foreach ($items as $index => $val) {
                             Option::create([
@@ -179,10 +183,12 @@ class AdminController extends Controller
                         // Single / Multiple
                         foreach ($item['options'] as $idx => $optText) {
                             $isCorrect = false;
-                            if (is_array($item['correct'])) {
-                                $isCorrect = in_array($idx, $item['correct']); // Multiple
-                            } else {
-                                $isCorrect = ($idx == $item['correct']); // Single
+                            if (isset($item['correct'])) {
+                                if (is_array($item['correct'])) {
+                                    $isCorrect = in_array($idx, $item['correct']);
+                                } else {
+                                    $isCorrect = ($idx == $item['correct']);
+                                }
                             }
 
                             Option::create([
