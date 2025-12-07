@@ -1,0 +1,776 @@
+[
+    {
+        "type": "single",
+        "question": "Kode python yang tepat untuk melengkapi kode HTTP Client berikut:\nimport http.client\ncon=http.client.HTTPConnection('localhost:5000')\n# ... code here ...\nres=con.getresponse().read().decode()\nprint(res)",
+        "explanation": "Server menggunakan <code>request.args.get('size')</code>. Dalam Flask, <code>request.args</code> digunakan untuk mengambil parameter dari URL (Query String) pada method GET.",
+        "options": [
+            "con.request('GET', '/key')",
+            "con.request('POST', '/key?size=128')",
+            "con.request('GET', '/key?size=128')",
+            "con.request('POST', '/key')"
+        ],
+        "correct": 2
+    },
+    {
+        "type": "single",
+        "question": "Perintah cURL untuk akses HTTP Server POST dengan JSON payload {'size':128} adalah...",
+        "explanation": "Server menggunakan <code>request.get_json()</code>. Ini mewajibkan client mengirim header <code>Content-Type: application/json</code> dan payload data JSON menggunakan flag <code>-d</code>.",
+        "options": [
+            "$ curl -X POST http://localhost:5000/key?size=128",
+            "$ curl -X GET http://localhost:5000/key?size=128",
+            "$ curl -X POST http://localhost:5000/key -H 'Content-Type: application/json' -d '{\"size\":128}'",
+            "$ curl -X GET http://localhost:5000/key?size=256"
+        ],
+        "correct": 2
+    },
+    {
+        "type": "single",
+        "question": "t = {'pemrograman', 'jaringan', 'dengan', 'python'}\nprint(t[3])\nOutput kode di atas adalah...",
+        "explanation": "Variabel 't' didefinisikan menggunakan kurung kurawal <code>{}</code> tanpa pasangan key-value, sehingga tipe datanya adalah <b>SET</b>. Set bersifat <i>unordered</i> (tidak berurutan) dan <i>unindexed</i> (tidak punya indeks), jadi akses index <code>[3]</code> menyebabkan Error.",
+        "options": ["dengan", "python", "jaringan", "error"],
+        "correct": 3
+    },
+    {
+        "type": "single",
+        "question": "Baris kode Python untuk membuat koneksi socket TCP adalah...",
+        "explanation": "<code>AF_INET</code> digunakan untuk IPv4, dan <code>SOCK_STREAM</code> digunakan untuk protokol TCP. (Sedangkan SOCK_DGRAM digunakan untuk UDP).",
+        "options": [
+            "ns=socket.socket(socket.AF_INET6, socket.SOCK_STREAM)",
+            "ns=socket.socket()",
+            "ns=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)",
+            "ns=socket.socket(socket.AF_INET, socket.SOCK_STREAM)"
+        ],
+        "correct": 3
+    },
+    {
+        "type": "single",
+        "question": "Pada baris kode: `from flask import Flask`, kata 'flask' (huruf kecil) dikategorikan sebagai...",
+        "explanation": "Dalam sintaks import Python tersebut, `flask` (huruf kecil) adalah nama <b>Module</b> atau library, sedangkan `Flask` (huruf besar) adalah nama Class.",
+        "options": ["Method", "Module", "Object", "Class"],
+        "correct": 1
+    },
+    {
+        "type": "single",
+        "question": "Dalam potongan kode `@app.route('/')`, fungsi `route` dikategorikan sebagai...",
+        "explanation": "Route adalah fungsi yang didefinisikan di dalam class Flask (atau melekat pada objek `app`), sehingga dalam konsep OOP disebut sebagai <b>Method</b>.",
+        "options": ["Method", "Module", "Class", "Object"],
+        "correct": 0
+    },
+    {
+        "type": "single",
+        "question": "Apa output dari kode berikut?\nl = ('pemrograman', 'jaringan', 'dengan', 'python')\nfor x in l:\n    print(x)\n    if x == 'jaringan':\n        break",
+        "explanation": "Loop mencetak 'pemrograman', lalu mencetak 'jaringan'. Setelah 'jaringan' dicetak, kondisi `if` terpenuhi dan perintah `break` menghentikan perulangan.",
+        "options": [
+            "pemrograman", 
+            "pemrograman\njaringan", 
+            "pemrograman\njaringan\ndengan", 
+            "pemrograman\njaringan\ndengan\npython"
+        ],
+        "correct": 1
+    },
+    {
+        "type": "single",
+        "question": "Apa output dari kode berikut?\nl = ('pemrograman', 'jaringan', 'dengan', 'python')\nfor x in l:\n    if x == 'jaringan':\n        continue\n    print(x)",
+        "explanation": "Perintah `continue` akan melewati sisa kode untuk iterasi saat ini. Saat `x` adalah 'jaringan', `print(x)` dilewati. Maka outputnya: pemrograman, dengan, python.",
+        "options": [
+            "pemrograman\ndengan\npython", 
+            "pemrograman\njaringan\ndengan", 
+            "pemrograman\njaringan", 
+            "pemrograman\njaringan\ndengan\npython"
+        ],
+        "correct": 0
+    },
+    {
+        "type": "multiple",
+        "question": "Manakah yang termasuk request method standar pada HTTP? (Pilih semua yang benar)",
+        "explanation": "Method HTTP standar meliputi: GET, POST, PUT, DELETE, OPTION, HEAD. 'UPDATE' bukan method HTTP standar (biasanya istilah SQL).",
+        "options": ["DELETE", "POST", "UPDATE", "OPTION"],
+        "correct": [0, 1, 3]
+    },
+    {
+        "type": "multiple",
+        "question": "Manakah method yang valid pada class socket di Python? (Pilih semua yang benar)",
+        "explanation": "Method socket yang valid: <b>recv()</b> (terima data), <b>connect()</b> (koneksi client), <b>bind()</b> (binding server). `reverse()` tidak ada pada modul socket.",
+        "options": ["reverse()", "recv()", "connect()", "bind()"],
+        "correct": [1, 2, 3]
+    },
+    {
+        "type": "matching",
+        "question": "Pasangkan Kode Python (Kiri) dengan Tipe Data (Kanan) yang sesuai:",
+        "explanation": "Perhatikan sintaks kuncinya: Prefix <code>b</code> untuk Byte, <code>[]</code> untuk List, <code>{}</code> tanpa key untuk Set, <code>{key:value}</code> untuk Dictionary, dan <code>()</code> untuk Tuple.",
+        "pairs": [
+            { "left": "s=b\"Pemrograman Jaringan dengan Python\"", "right": "Byte" },
+            { "left": "x=8", "right": "Integer" },
+            { "left": "s = [\"pemrograman\", \"jaringan\", \"dengan\", \"python\"]", "right": "List" },
+            { "left": "t = {\"pemrograman\", \"jaringan\", \"dengan\", \"python\"}", "right": "Set" },
+            { "left": "m={\"mata kuliah\":\"Pemrograman Jaringan dengan Python\"}", "right": "Dictionary" },
+            { "left": "r = Range(10)", "right": "Range" },
+            { "left": "b=\"Pemrograman Jaringan dengan Python\"", "right": "String" },
+            { "left": "y=0.8", "right": "Float" },
+            { "left": "l = (\"pemrograman\", \"jaringan\", \"dengan\", \"python\")", "right": "Tuple" }
+        ]
+    },
+    {
+        "type": "matching",
+        "question": "Pasangkan Deskripsi/Kode berikut dengan Arsitektur Server yang sesuai:",
+        "explanation": "Monolithic adalah lawan dari Microservice. Single Process adalah lawan dari Multiple Process. Request-Driven adalah lawan dari Event-Driven.",
+        "pairs": [
+            { "left": "Arsitektur di mana aplikasi didesain sebagai satu unit kesatuan utuh", "right": "Monolithic" },
+            { "left": "Kode Flask default: app.run()", "right": "Single Process & Thread" },
+            { "left": "Menggunakan: from multiprocessing import Process", "right": "Multiple Process" },
+            { "left": "Klien mengirim request ke server dan menunggu response", "right": "Request-Driven" },
+            { "left": "Server mengirim event ke klien, klien bereaksi terhadap event", "right": "Event-Driven" },
+            { "left": "Aplikasi dipecah menjadi layanan-layanan kecil independen", "right": "Microservice" }
+        ]
+    },
+    {
+        "type": "ordering",
+        "question": "Urutkan tahapan Socket untuk komunikasi TCP Client dari awal (atas) ke akhir (bawah):",
+        "explanation": "Urutan logis TCP Client: 1. Inisialisasi (socket), 2. Membangun koneksi (connect), 3. Mengirim data request (send), 4. Menerima data balasan (recv).",
+        "correctOrder": ["socket", "connect", "send", "recv"]
+    },
+    {
+        "type": "single",
+        "question": "Analisis potongan kode berikut:\n\nmy_list = ['rks', 'poltek', 'ssn']\nmy_list[1] = 'siber'\nprint(my_list)\n\nApa output yang dihasilkan dari kode di atas?",
+        "options": [
+            "['rks', 'siber', 'ssn']",
+            "['siber', 'poltek', 'ssn']",
+            "['rks', 'poltek', 'siber']",
+            "Error: list assignment index out of range"
+        ],
+        "correct": 0,
+        "explanation": "List bersifat mutable (bisa diubah). Indeks dimulai dari 0, sehingga my_list[1] merujuk pada elemen kedua ('poltek') yang kemudian diganti menjadi 'siber'.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 24"
+    },
+    {
+        "type": "single",
+        "question": "Manakah pernyataan yang BENAR mengenai perbedaan penggunaan `socket.SOCK_STREAM` dan `socket.SOCK_DGRAM` dalam inisialisasi socket Python?",
+        "options": [
+            "SOCK_STREAM untuk UDP, SOCK_DGRAM untuk TCP",
+            "SOCK_STREAM untuk IPv4, SOCK_DGRAM untuk IPv6",
+            "SOCK_STREAM untuk TCP, SOCK_DGRAM untuk UDP",
+            "Keduanya digunakan untuk protokol TCP"
+        ],
+        "correct": 2,
+        "explanation": "Dalam modul socket Python, `SOCK_STREAM` digunakan untuk mendefinisikan tipe socket TCP (connection-oriented), sedangkan `SOCK_DGRAM` digunakan untuk UDP (datagram/connectionless).",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 42 & Halaman 50"
+    },
+    {
+        "type": "multiple",
+        "question": "Pilih dua metode yang WAJIB dieksekusi oleh TCP Server sebelum dapat menerima koneksi dari client:",
+        "options": [
+            "connect()",
+            "bind()",
+            "listen()",
+            "sendto()"
+        ],
+        "correct": [1, 2],
+        "explanation": "TCP Server harus melakukan `bind()` untuk mengikat ke alamat/port tertentu, dan `listen()` untuk mulai mendengarkan koneksi masuk. `connect()` digunakan oleh Client.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 50"
+    },
+    {
+        "type": "single",
+        "question": "Analisis kode berikut:\n\ntry:\n    a = 10 / 0\nexcept:\n    print('Error Terjadi')\n\nKode di atas merupakan implementasi dari konsep...",
+        "options": [
+            "Looping",
+            "Object Oriented Programming",
+            "Exception Handling",
+            "Network Automation"
+        ],
+        "correct": 2,
+        "explanation": "Blok `try...except` digunakan untuk menangani error (exception) yang terjadi saat runtime agar program tidak berhenti mendadak (crash), seperti pembagian dengan nol.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 27"
+    },
+    {
+        "type": "matching",
+        "question": "Pasangkan Layer OSI dengan Protokol/Teknologi yang sesuai berdasarkan materi:",
+        "pairs": [
+            { "left": "Transport Layer", "right": "TCP, UDP" },
+            { "left": "Network Layer", "right": "IPv4, IPv6, ICMP" },
+            { "left": "Session Layer", "right": "Socket (BSD)" },
+            { "left": "Application Layer", "right": "HTTP, DNS, FTP" }
+        ],
+        "explanation": "TCP/UDP ada di Transport, IP/ICMP di Network, Socket merepresentasikan Session layer interface, dan HTTP/DNS adalah protokol Aplikasi.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 38"
+    },
+    {
+        "type": "single",
+        "question": "Dalam arsitektur Microservices, bagaimana karakteristik utama komunikasi antar layanannya?",
+        "options": [
+            "Semua modul dikompilasi menjadi satu file binary besar",
+            "Layanan berkomunikasi melalui shared memory saja",
+            "Aplikasi dipecah menjadi layanan independen yang berkomunikasi (biasanya via HTTP/REST)",
+            "Klien harus terhubung langsung ke database setiap layanan"
+        ],
+        "correct": 2,
+        "explanation": "Microservices memecah aplikasi menjadi layanan-layanan kecil independen yang dapat dikembangkan, di-deploy, dan dikelola secara terpisah, seringkali berkomunikasi via API.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 66"
+    },
+    {
+        "type": "single",
+        "question": "Analisis baris perintah cURL berikut:\n\n$ curl -X POST http://localhost:5000/encrypt -d '{\"key\":\"123\", \"plaintext\":\"rks\"}'\n\nApa yang kurang atau salah dari perintah di atas agar dapat diterima dengan benar oleh Flask server yang menggunakan `request.get_json()`?",
+        "options": [
+            "Method harusnya GET",
+            "URL tidak boleh menggunakan localhost",
+            "Kurang header '-H \"Content-Type: application/json\"'",
+            "Data JSON tidak boleh menggunakan kutip tunggal"
+        ],
+        "correct": 2,
+        "explanation": "Agar server Flask mengenali payload sebagai JSON (via `request.get_json()`), header `Content-Type: application/json` wajib disertakan dalam request.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 84"
+    },
+    {
+        "type": "ordering",
+        "question": "Urutkan tahapan 'Three-Way Handshake' pada koneksi TCP:",
+        "correctOrder": [
+            "Client mengirim SYN",
+            "Server mengirim SYN-ACK",
+            "Client mengirim ACK",
+            "Koneksi Established"
+        ],
+        "explanation": "Proses handshake: 1. Client kirim SYN -> 2. Server balas SYN-ACK -> 3. Client balas ACK -> 4. Koneksi terbentuk (Established).",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 71"
+    },
+    {
+        "type": "single",
+        "question": "Pada kode Python `app = Flask(__name__)`, variabel `__name__` berfungsi untuk...",
+        "options": [
+            "Memberikan nama unik pada database",
+            "Menentukan lokasi modul aplikasi untuk mencari resource (template/static files)",
+            "Menghubungkan ke internet",
+            "Melakukan enkripsi nama aplikasi"
+        ],
+        "correct": 1,
+        "explanation": "Argumen `__name__` memberi tahu Flask di mana modul aplikasi berada, yang penting untuk menemukan file statis atau template.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 74"
+    },
+    {
+        "type": "single",
+        "question": "Apa fungsi dari method `ns.accept()` pada pemrograman TCP Server?",
+        "options": [
+            "Menutup koneksi socket",
+            "Mengirim data ke client",
+            "Menerima koneksi masuk dan mengembalikan objek koneksi baru serta alamat client",
+            "Mengikat socket ke port tertentu"
+        ],
+        "correct": 2,
+        "explanation": "`accept()` menunggu koneksi masuk. Saat koneksi diterima, ia mengembalikan pasangan `(conn, address)` di mana `conn` adalah objek socket baru untuk komunikasi data.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 51"
+    },
+    {
+        "type": "multiple",
+        "question": "Manakah tipe data Python yang bersifat IMMUTABLE (tidak dapat diubah setelah dibuat)? (Pilih 2)",
+        "options": [
+            "List",
+            "Tuple",
+            "Dictionary",
+            "String"
+        ],
+        "correct": [1, 3],
+        "explanation": "Tuple dan String di Python bersifat immutable. List dan Dictionary bersifat mutable (bisa diedit isinya).",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 22 & Halaman 24"
+    },
+    {
+        "type": "single",
+        "question": "Analisis kode berikut:\n\n@app.route('/key', methods=['GET'])\ndef key_generate():\n    size = request.args.get('size')\n\nJika client mengakses `/key?size=256`, nilai variabel `size` adalah...",
+        "options": [
+            "128",
+            "256 (sebagai String)",
+            "256 (sebagai Integer)",
+            "None"
+        ],
+        "correct": 1,
+        "explanation": "Parameter URL (query string) yang diambil melalui `request.args.get` secara default bertipe String. Perlu di-cast ke int() jika ingin operasi matematika.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 83"
+    },
+    {
+        "type": "single",
+        "question": "Dalam konteks keamanan jaringan dengan Python, library `Cryptodome` (PyCryptodome) digunakan untuk...",
+        "options": [
+            "Membuat tampilan GUI",
+            "Melakukan operasi kriptografi seperti enkripsi AES dan random bytes",
+            "Membuat routing jaringan",
+            "Mengelola database SQL"
+        ],
+        "correct": 1,
+        "explanation": "PyCryptodome digunakan untuk operasi kriptografi, contohnya `AES` untuk enkripsi dan `get_random_bytes` untuk generate key.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 83"
+    },
+    {
+        "type": "single",
+        "question": "Perintah OpenSSL berikut digunakan untuk tujuan apa?\n\n$ openssl req -x509 -newkey rsa:4096 -nodes -out cert.pem -keyout key.pem -days 365",
+        "options": [
+            "Melakukan hacking password",
+            "Membuat Self-Signed Certificate untuk HTTPS",
+            "Menghapus virus dari server",
+            "Melakukan ping ke server"
+        ],
+        "correct": 1,
+        "explanation": "Perintah tersebut menghasilkan sertifikat x509 (cert.pem) dan private key (key.pem) yang digunakan untuk mengaktifkan HTTPS secara self-signed.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 102"
+    },
+    {
+        "type": "single",
+        "question": "Jika sebuah UDP Server ingin mengirim balasan ke client, method apa yang digunakan?",
+        "options": [
+            "send()",
+            "sendto()",
+            "reply()",
+            "write()"
+        ],
+        "correct": 1,
+        "explanation": "UDP adalah connectionless, jadi server harus menentukan alamat tujuan secara eksplisit menggunakan `sendto(data, address)`.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 43"
+    },
+    {
+        "type": "matching",
+        "question": "Pasangkan konsep OOP berikut dengan deskripsinya:",
+        "pairs": [
+            { "left": "Class", "right": "Blueprint/Template untuk membuat objek" },
+            { "left": "Object", "right": "Instance nyata dari sebuah class" },
+            { "left": "Inheritance", "right": "Mewarisi atribut/method dari class induk" },
+            { "left": "Polymorphism", "right": "Objek berbeda merespon method yang sama dengan cara beda" }
+        ],
+        "explanation": "Class adalah cetakan (Hal 31), Object adalah hasil cetakan, Inheritance adalah pewarisan (Hal 33), Polymorphism adalah banyak bentuk.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 31-33"
+    },
+    {
+        "type": "single",
+        "question": "Mengapa UDP lebih disukai untuk aplikasi streaming video dibandingkan TCP?",
+        "options": [
+            "UDP menjamin data sampai 100%",
+            "UDP lebih lambat tapi aman",
+            "UDP minim latensi dan mentoleransi packet loss",
+            "UDP melakukan 3-way handshake"
+        ],
+        "correct": 2,
+        "explanation": "UDP adalah protokol 'unreliable' yang tidak menjamin urutan atau pengiriman ulang, membuatnya lebih cepat (low latency) untuk aplikasi real-time.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 40"
+    },
+    {
+        "type": "single",
+        "question": "Apa output dari kode `print(list(range(5)))`?",
+        "options": [
+            "[1, 2, 3, 4, 5]",
+            "[0, 1, 2, 3, 4, 5]",
+            "[0, 1, 2, 3, 4]",
+            "[1, 2, 3, 4]"
+        ],
+        "correct": 2,
+        "explanation": "Fungsi `range(n)` menghasilkan angka dari 0 hingga n-1.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 24"
+    },
+    {
+        "type": "single",
+        "question": "Pada Flask, untuk menjalankan aplikasi agar bisa diakses dari jaringan luar (bukan hanya localhost) pada port 80, argumen apa yang harus ditambahkan pada `app.run()`?",
+        "options": [
+            "app.run(host='0.0.0.0', port=80)",
+            "app.run(host='127.0.0.1', port=80)",
+            "app.run(network='public')",
+            "app.run(admin=True)"
+        ],
+        "correct": 0,
+        "explanation": "Host '0.0.0.0' membuat server mendengarkan pada semua interface jaringan publik, bukan hanya loopback.",
+        "reference": "Referensi: Konsep umum Flask (tersirat pada Halaman 42 mengenai bind 0.0.0.0 pada socket)"
+    },
+    {
+        "type": "single",
+        "question": "Manakah tools yang disebutkan dalam materi untuk melakukan simulasi serangan siber atau pentesting?",
+        "options": [
+            "Microsoft Word",
+            "Kali Linux & Metasploitable2",
+            "Adobe Photoshop",
+            "Corel Draw"
+        ],
+        "correct": 1,
+        "explanation": "Materi menyebutkan Kali OS (Penyerang) dan Metasploitable2 (Target) untuk simulasi serangan.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 7"
+    },
+    {
+        "type": "single",
+        "question": "Pada kode Client TCP `ns.connect(('127.0.0.1', 5656))`, angka 5656 merepresentasikan...",
+        "options": [
+            "IP Address",
+            "Port Number",
+            "Socket ID",
+            "Protocol ID"
+        ],
+        "correct": 1,
+        "explanation": "Fungsi connect menerima tuple (IP Address, Port Number).",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 51"
+    },
+    {
+        "type": "single",
+        "question": "Apa fungsi dari `json.loads(res)` pada kode Python?",
+        "options": [
+            "Mengubah data Dictionary Python menjadi String JSON",
+            "Mengubah String JSON menjadi Dictionary Python",
+            "Mengirim data JSON ke server",
+            "Menghapus data JSON"
+        ],
+        "correct": 1,
+        "explanation": "`json.loads` (load string) digunakan untuk mem-parsing string berformat JSON menjadi objek Python (Dictionary/List).",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 96"
+    },
+    {
+        "type": "multiple",
+        "question": "Pilih dua hal yang membedakan HTTP dan HTTPS:",
+        "options": [
+            "HTTPS menggunakan port 80, HTTP port 443",
+            "HTTPS mengenkripsi data menggunakan SSL/TLS",
+            "HTTP mengirim data dalam bentuk plain text",
+            "HTTPS tidak memerlukan sertifikat"
+        ],
+        "correct": [1, 2],
+        "explanation": "HTTPS (Secure) mengenkripsi data sehingga tidak plain text seperti HTTP.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 100 & 101"
+    },
+    {
+        "type": "single",
+        "question": "Dalam OOP Python, method `__init__` berfungsi sebagai...",
+        "options": [
+            "Destructor (menghapus objek)",
+            "Constructor (inisialisasi atribut objek saat dibuat)",
+            "Method biasa untuk mencetak info",
+            "Variabel global"
+        ],
+        "correct": 1,
+        "explanation": "`__init__` adalah constructor method yang otomatis dipanggil saat objek dibuat untuk inisialisasi atribut.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 32"
+    },
+    {
+        "type": "single",
+        "question": "Analisis kode socket berikut:\n`data, addr = ns.recvfrom(256)`\nKode tersebut biasanya ditemukan pada...",
+        "options": [
+            "TCP Server",
+            "UDP Server/Client",
+            "HTTP Request",
+            "Flask App"
+        ],
+        "correct": 1,
+        "explanation": "`recvfrom()` adalah method khas socket UDP (datagram) untuk menerima data beserta alamat pengirimnya. TCP biasanya menggunakan `recv()`.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 43"
+    },
+    {
+        "type": "single",
+        "question": "Apa arti status code HTTP 200?",
+        "options": [
+            "Not Found",
+            "Internal Server Error",
+            "OK (Berhasil)",
+            "Unauthorized"
+        ],
+        "correct": 2,
+        "explanation": "Secara umum dalam protokol HTTP, kode 200 menandakan request berhasil diproses.",
+        "reference": "Referensi: Pengetahuan Umum Pemrograman Jaringan (Tersirat di Halaman 71 diagram HTTP Response)"
+    },
+    {
+        "type": "matching",
+        "question": "Pasangkan Tipe Data Python dengan cara pendefinisiannya:",
+        "pairs": [
+            { "left": "Dictionary", "right": "{\"kunci\": \"nilai\"}" },
+            { "left": "Set", "right": "{\"nilai1\", \"nilai2\"}" },
+            { "left": "List", "right": "[\"nilai1\", \"nilai2\"]" },
+            { "left": "Tuple", "right": "(\"nilai1\", \"nilai2\")" }
+        ],
+        "explanation": "Dict pakai {k:v}, Set pakai {v}, List pakai [], Tuple pakai ().",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 22-25"
+    },
+    {
+        "type": "single",
+        "question": "Untuk mengamankan endpoint API di Flask dengan autentikasi dasar, decorator apa yang digunakan pada contoh materi?",
+        "options": [
+            "@app.secure",
+            "@auth.login_required",
+            "@flask.protect",
+            "@admin.only"
+        ],
+        "correct": 1,
+        "explanation": "Materi menggunakan library `flask_httpauth` dengan decorator `@auth.login_required`.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 87"
+    },
+    {
+        "type": "single",
+        "question": "Apa output dari kode `print(b'rks'.decode())`?",
+        "options": [
+            "b'rks'",
+            "rks (String)",
+            "Error",
+            "None"
+        ],
+        "correct": 1,
+        "explanation": "Method `.decode()` mengubah tipe data bytes (`b'...'`) menjadi String biasa.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 43"
+    },
+    {
+        "type": "single",
+        "question": "Dalam arsitektur Event-Driven, komunikasi terjadi secara...",
+        "options": [
+            "Synchronous (Menunggu balasan)",
+            "Asynchronous (Server mengirim event, client bereaksi)",
+            "Manual",
+            "Offline"
+        ],
+        "correct": 1,
+        "explanation": "Event-driven bersifat asynchronous dimana server mem-push event ke client, berbeda dengan request-driven yang synchronous.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 70"
+    },
+    {
+        "type": "ordering",
+        "question": "Urutkan tahapan pembuatan server TCP sederhana:",
+        "correctOrder": [
+            "Inisialisasi Socket",
+            "Bind ke IP/Port",
+            "Listen untuk koneksi",
+            "Accept koneksi client"
+        ],
+        "explanation": "Urutan: 1. Socket() -> 2. Bind() -> 3. Listen() -> 4. Accept().",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 50-51"
+    },
+    {
+        "type": "single",
+        "question": "Fungsi `cipher.encrypt_and_digest(data)` pada PyCryptodome (AES GCM) menghasilkan dua output, yaitu...",
+        "options": [
+            "Ciphertext dan Key",
+            "Ciphertext dan Tag (MAC)",
+            "Plaintext dan Key",
+            "Nonce dan Header"
+        ],
+        "correct": 1,
+        "explanation": "Mode GCM adalah *Authenticated Encryption*, menghasilkan ciphertext (data terenkripsi) dan tag (untuk verifikasi integritas).",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 84"
+    },
+    {
+        "type": "single",
+        "question": "Pada topologi lab GNS3 (Tugas 7), koneksi dari Kali Linux ke topologi router menggunakan appliance apa?",
+        "options": [
+            "VPCS",
+            "Cloud Appliance",
+            "Ethernet Switch",
+            "NAT Node"
+        ],
+        "correct": 1,
+        "explanation": "Tugas 7 secara spesifik menyebutkan: 'Buat koneksi dari KALI LINUX ke topology... menggunakan cloud appliance GNS3'.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 104"
+    },
+    {
+        "type": "single",
+        "question": "Apa kegunaan dari `base64.b64encode` saat mengirim data biner (seperti hasil enkripsi) melalui JSON?",
+        "options": [
+            "Mengompres data agar lebih kecil",
+            "Mengubah data biner menjadi format teks ASCII agar aman dikirim via JSON",
+            "Melakukan enkripsi ganda",
+            "Menghapus metadata"
+        ],
+        "correct": 1,
+        "explanation": "JSON adalah format berbasis teks. Data biner (seperti ciphertext raw) harus di-encode ke Base64 (teks) agar bisa dimuat dalam JSON.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 84"
+    },
+    {
+        "type": "single",
+        "question": "Manakah sintaks yang benar untuk import module Flask?",
+        "options": [
+            "import Flask",
+            "from flask import Flask",
+            "include Flask",
+            "using Flask"
+        ],
+        "correct": 1,
+        "explanation": "Nama paketnya huruf kecil (`flask`), nama kelasnya huruf besar (`Flask`).",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 74"
+    },
+    {
+        "type": "single",
+        "question": "Apa arti dari 'WSGI' dalam konteks Python Web Server?",
+        "options": [
+            "Web Socket Gateway Interface",
+            "Web Server Gateway Interface",
+            "Wide System Global Internet",
+            "Wireless Standard Global Interface"
+        ],
+        "correct": 1,
+        "explanation": "WSGI (Web Server Gateway Interface) adalah standar antarmuka antara aplikasi web Python dan web server.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 73"
+    },
+    {
+        "type": "single",
+        "question": "Pada kode `cipher = AES.new(key, AES.MODE_GCM)`, parameter `key` harus berupa...",
+        "options": [
+            "String biasa",
+            "Integer",
+            "Bytes (biner)",
+            "List"
+        ],
+        "correct": 2,
+        "explanation": "Kunci kriptografi dalam library PyCryptodome harus dalam bentuk bytes, bukan string. (Biasanya dikonversi via `.encode()` atau `b64decode`).",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 84"
+    },
+    {
+        "type": "single",
+        "question": "Apa tujuan utama dari perintah `ns.close()` pada pemrograman socket?",
+        "options": [
+            "Mempercepat koneksi",
+            "Menghapus log",
+            "Melepaskan resource port dan memutus koneksi",
+            "Mengirim data terakhir"
+        ],
+        "correct": 2,
+        "explanation": "`close()` penting untuk melepaskan file descriptor dan port agar bisa digunakan kembali, serta memberitahu peer bahwa koneksi berakhir.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 55"
+    },
+    {
+        "type": "multiple",
+        "question": "Pilih dua komponen yang membentuk CIA Triad dalam keamanan informasi (Materi Intro):",
+        "options": [
+            "Confidentiality",
+            "Connectivity",
+            "Integrity",
+            "Intelligence"
+        ],
+        "correct": [0, 2],
+        "explanation": "CIA Triad terdiri dari Confidentiality, Integrity, dan Availability. (Konsep dasar keamanan yang mendasari materi enkripsi).",
+        "reference": "Referensi: Pengetahuan Dasar Keamanan Siber (Kontekstual dengan materi Enkripsi/Dekripsi)"
+    },
+    {
+        "type": "single",
+        "question": "Jika server Flask dijalankan dengan `flask run --cert=adhoc`, apa yang terjadi?",
+        "options": [
+            "Server berjalan di port 80",
+            "Server berjalan menggunakan HTTPS dengan sertifikat sementara (on-the-fly)",
+            "Server error karena tidak ada file sertifikat",
+            "Server menolak koneksi"
+        ],
+        "correct": 1,
+        "explanation": "Opsi `--cert=adhoc` memungkinkan Flask membuat sertifikat SSL sementara untuk testing HTTPS tanpa file cert manual.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 101"
+    },
+    {
+        "type": "single",
+        "question": "Metasploitable2 pada materi digunakan sebagai...",
+        "options": [
+            "Mesin Penyerang",
+            "Mesin Target yang rentan (vulnerable)",
+            "Router",
+            "Firewall"
+        ],
+        "correct": 1,
+        "explanation": "Metasploitable2 didefinisikan sebagai 'deliberately vulnerable VM' atau target latihan.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 7"
+    },
+    {
+        "type": "single",
+        "question": "Apa output kode berikut: `print('Hello ' + 'World')`?",
+        "options": [
+            "Hello World",
+            "HelloWorld",
+            "Error",
+            "Hello+World"
+        ],
+        "correct": 1,
+        "explanation": "Operator `+` pada string melakukan konkatenasi (penggabungan) tanpa menambahkan spasi otomatis.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 22 (Konsep String)"
+    },
+    {
+        "type": "single",
+        "question": "Fungsi `verify_password` pada `flask_httpauth` digunakan untuk...",
+        "options": [
+            "Mengubah password user",
+            "Memvalidasi apakah username dan password yang dikirim client cocok dengan database",
+            "Membuat password baru",
+            "Melakukan hashing password"
+        ],
+        "correct": 1,
+        "explanation": "Decorator `@auth.verify_password` mendaftarkan fungsi callback untuk memverifikasi kredensial pengguna.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 86"
+    },
+    {
+        "type": "single",
+        "question": "Pada komunikasi TCP, jika Server mengirim data menggunakan `conn.send()`, Client harus menggunakan method apa untuk membacanya?",
+        "options": [
+            "conn.read()",
+            "socket.accept()",
+            "socket.recv()",
+            "socket.get()"
+        ],
+        "correct": 2,
+        "explanation": "Pasangan dari `send()` pada TCP adalah `recv()`.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 54"
+    },
+    {
+        "type": "single",
+        "question": "Apa maksud dari `if __name__ == '__main__':` dalam script Python?",
+        "options": [
+            "Kode di dalamnya hanya jalan jika script diimpor sebagai modul",
+            "Kode di dalamnya hanya jalan jika script dijalankan langsung (bukan diimpor)",
+            "Kode di dalamnya adalah komentar",
+            "Kode error"
+        ],
+        "correct": 1,
+        "explanation": "Blok ini memastikan kode di dalamnya (seperti `app.run` atau `main`) hanya dieksekusi jika file dijalankan sebagai program utama.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 65"
+    },
+    {
+        "type": "matching",
+        "question": "Pasangkan Library Python dengan fungsinya:",
+        "pairs": [
+            { "left": "socket", "right": "Low-level network interface (TCP/UDP)" },
+            { "left": "flask", "right": "Web Framework / WSGI App" },
+            { "left": "requests / http.client", "right": "HTTP Client" },
+            { "left": "PyCryptodome", "right": "Cryptography Services" }
+        ],
+        "explanation": "Socket untuk raw connection, Flask untuk Web Server, http.client untuk request web, PyCryptodome untuk enkripsi.",
+        "reference": "Referensi: Rangkuman Materi Seluruh Slide"
+    },
+    {
+        "type": "single",
+        "question": "Struktur data `{'nama': 'RKS', 'angkatan': 20}` disebut...",
+        "options": [
+            "List",
+            "Tuple",
+            "Dictionary",
+            "Set"
+        ],
+        "correct": 2,
+        "explanation": "Format `{key: value}` adalah ciri khas Dictionary.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 25"
+    },
+    {
+        "type": "single",
+        "question": "Manakah command untuk install library flask?",
+        "options": [
+            "python install flask",
+            "pip install Flask",
+            "apt-get install flask",
+            "npm install flask"
+        ],
+        "correct": 1,
+        "explanation": "`pip` adalah package installer standar untuk Python.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 63"
+    },
+    {
+        "type": "single",
+        "question": "Pada arsitektur Monolithic, apa kelemahan utamanya?",
+        "options": [
+            "Sangat kompleks untuk aplikasi kecil",
+            "Jika satu modul error fatal, seluruh aplikasi bisa down (Single Point of Failure)",
+            "Komunikasi antar modul lambat",
+            "Terlalu banyak server yang dibutuhkan"
+        ],
+        "correct": 1,
+        "explanation": "Monolithic adalah 'single unit'. Jika ada bug fatal di satu bagian, bisa mematikan keseluruhan proses aplikasi.",
+        "reference": "Referensi: MATERi UTS PROGJAR.pdf, Halaman 66"
+    },
+    {
+        "type": "single",
+        "question": "Apa itu 'Payload' dalam konteks pengiriman data jaringan?",
+        "options": [
+            "Header paket",
+            "Alamat IP tujuan",
+            "Data aktual/isi pesan yang dikirim",
+            "Protokol yang digunakan"
+        ],
+        "correct": 2,
+        "explanation": "Payload merujuk pada 'muatan' atau data inti yang ingin disampaikan, di luar header protokol.",
+        "reference": "Referensi: Konsep umum Socket Programming (Slide 37 menyebut terminologi paket & payload)"
+    }
+]
