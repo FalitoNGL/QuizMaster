@@ -104,8 +104,9 @@
             if (typeof Echo !== 'undefined') {
                 window.Echo = new Echo({
                     broadcaster: 'pusher',
-                    key: '{{ env("REVERB_APP_KEY", "app-key") }}',
-                    wsHost: window.location.hostname, wsPort: 8080, wssPort: 8080, forceTLS: false, enabledTransports: ['ws', 'wss'], cluster: 'mt1'
+                    key: '{{ config("broadcasting.connections.pusher.key") }}',
+                    cluster: '{{ config("broadcasting.connections.pusher.options.cluster") }}',
+                    forceTLS: true
                 });
                 window.Echo.channel('game.' + roomCode).listen('.GameUpdated', (e) => {
                     document.getElementById('score-host').innerText = e.host_score;
