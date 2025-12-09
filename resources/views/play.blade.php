@@ -374,7 +374,8 @@
             contentDiv.classList.add('fade-enter-active');
             contentDiv.classList.remove('opacity-0', 'translate-y-4');
 
-            document.getElementById('question-text').innerText = q.question_text;
+            // Gunakan textContent untuk soal juga
+            document.getElementById('question-text').textContent = q.question_text;
             document.getElementById('q-number').innerText = currentIdx + 1;
             document.getElementById('feedback-area').classList.add('hidden');
             document.getElementById('options-container').classList.remove('disabled-opt');
@@ -418,15 +419,23 @@
             if (q.type === 'single') {
                 document.getElementById('instruction-content').innerText = "Pilih satu jawaban yang benar.";
                 displayOptions.forEach((opt, idx) => {
-                    // Tombol 3D & Label Structure
+                    // Tombol 3D & Label Structure via DOM
                     const btn = document.createElement('button');
                     btn.className = 'w-full text-left p-0 rounded-xl btn-3d btn-default flex items-stretch overflow-hidden group shadow-sm';
-                    btn.innerHTML = `
-                        <div class="bg-black/20 px-5 flex items-center justify-center font-bold text-slate-300 border-r border-black/10 text-xl group-hover:bg-black/30 transition">
-                            ${labels[idx] || '?'}
-                        </div>
-                        <div class="p-4 flex-grow font-medium text-lg relative z-10 flex items-center">${opt.option_text}</div>
-                    `;
+                    
+                    // Label A/B/C/D
+                    const labelDiv = document.createElement('div');
+                    labelDiv.className = 'bg-black/20 px-5 flex items-center justify-center font-bold text-slate-300 border-r border-black/10 text-xl group-hover:bg-black/30 transition';
+                    labelDiv.textContent = labels[idx] || '?';
+
+                    // Konten Opsi
+                    const textDiv = document.createElement('div');
+                    textDiv.className = 'p-4 flex-grow font-medium text-lg relative z-10 flex items-center';
+                    textDiv.textContent = opt.option_text; // INI KUNCINYA (textContent)
+
+                    btn.appendChild(labelDiv);
+                    btn.appendChild(textDiv);
+
                     btn.dataset.isCorrect = opt.is_correct;
                     btn.onclick = () => {
                         btn.classList.add('pressed'); // Efek tekan manual
@@ -441,7 +450,18 @@
                 displayOptions.forEach(opt => {
                     const div = document.createElement('div');
                     div.className = 'option-item w-full text-left p-4 rounded-xl border-2 border-slate-700 bg-slate-800 hover:bg-slate-700 transition mb-2 cursor-pointer flex items-center gap-3 shadow-sm group';
-                    div.innerHTML = `<div class="w-6 h-6 border-2 border-slate-500 rounded flex items-center justify-center group-hover:border-blue-400"><i class="fas fa-check text-transparent transition check-icon"></i></div> <span class="text-lg">${opt.option_text}</span>`;
+                    
+                    const iconDiv = document.createElement('div');
+                    iconDiv.className = 'w-6 h-6 border-2 border-slate-500 rounded flex items-center justify-center group-hover:border-blue-400';
+                    iconDiv.innerHTML = '<i class="fas fa-check text-transparent transition check-icon"></i>';
+
+                    const textSpan = document.createElement('span');
+                    textSpan.className = 'text-lg';
+                    textSpan.textContent = opt.option_text; // Safe Text
+
+                    div.appendChild(iconDiv);
+                    div.appendChild(textSpan);
+
                     div.dataset.id = opt.id; div.dataset.correct = opt.is_correct;
                     div.onclick = () => {
                         div.classList.toggle('selected');
@@ -459,7 +479,17 @@
                     const div = document.createElement('div');
                     div.className = 'ordering-item w-full p-4 rounded-xl border-2 border-slate-700 bg-slate-800 mb-2 flex justify-between items-center text-white shadow-sm';
                     div.dataset.id = opt.id; div.dataset.order = opt.correct_order;
-                    div.innerHTML = `<span class="text-lg">${opt.option_text}</span><div class="flex flex-col gap-1"><button onclick="moveItem(this, -1)" class="p-2 bg-slate-700 rounded hover:bg-slate-600 text-xs">▲</button><button onclick="moveItem(this, 1)" class="p-2 bg-slate-700 rounded hover:bg-slate-600 text-xs">▼</button></div>`;
+                    
+                    const textSpan = document.createElement('span');
+                    textSpan.className = 'text-lg';
+                    textSpan.textContent = opt.option_text; // Safe Text
+
+                    const controls = document.createElement('div');
+                    controls.className = 'flex flex-col gap-1';
+                    controls.innerHTML = `<button onclick="moveItem(this, -1)" class="p-2 bg-slate-700 rounded hover:bg-slate-600 text-xs">▲</button><button onclick="moveItem(this, 1)" class="p-2 bg-slate-700 rounded hover:bg-slate-600 text-xs">▼</button>`;
+
+                    div.appendChild(textSpan);
+                    div.appendChild(controls);
                     container.appendChild(div);
                 });
             }
@@ -470,10 +500,30 @@
                 displayOptions.forEach(opt => {
                     const row = document.createElement('div');
                     row.className = 'p-4 rounded-xl border-2 border-slate-700 bg-slate-800 mb-2 shadow-sm text-white';
-                    let selectHtml = `<select class="matching-select w-full mt-2 bg-slate-900 p-3 rounded-lg border border-slate-600 focus:outline-none text-white focus:border-blue-400 transition" data-left-id="${opt.id}" data-correct-pair="${opt.matching_pair}" onchange="validateComplexAnswer()"><option value="">-- Pilih --</option>`;
-                    rightOptions.forEach(ro => { selectHtml += `<option value="${ro.text}">${ro.text}</option>`; });
-                    selectHtml += `</select>`;
-                    row.innerHTML = `<div class="font-bold mb-1 border-b border-slate-700 pb-2 text-lg">${opt.option_text}</div> ${selectHtml}`;
+                    
+                    const qText = document.createElement('div');
+                    qText.className = 'font-bold mb-1 border-b border-slate-700 pb-2 text-lg';
+                    qText.textContent = opt.option_text; // Safe Text
+
+                    const select = document.createElement('select');
+                    select.className = 'matching-select w-full mt-2 bg-slate-900 p-3 rounded-lg border border-slate-600 focus:outline-none text-white focus:border-blue-400 transition';
+                    select.dataset.leftId = opt.id;
+                    select.dataset.correctPair = opt.matching_pair; // Pair value is raw
+                    select.onchange = validateComplexAnswer;
+
+                    const defaultOpt = document.createElement('option');
+                    defaultOpt.value = ""; defaultOpt.text = "-- Pilih --";
+                    select.appendChild(defaultOpt);
+
+                    rightOptions.forEach(ro => {
+                        const optEl = document.createElement('option');
+                        optEl.value = ro.text;
+                        optEl.textContent = ro.text; // Safe Text for Options
+                        select.appendChild(optEl);
+                    });
+
+                    row.appendChild(qText);
+                    row.appendChild(select);
                     container.appendChild(row);
                 });
             }
@@ -604,8 +654,8 @@
             document.getElementById('options-container').classList.add('disabled-opt');
             document.getElementById('btn-confirm').classList.add('hidden');
             const q = questions[currentIdx];
-            document.getElementById('explanation-text').innerText = q.explanation || "Tidak ada pembahasan.";
-            document.getElementById('reference-text').innerText = q.reference ? "📚 Sumber: " + q.reference : "";
+            document.getElementById('explanation-text').textContent = q.explanation || "Tidak ada pembahasan.";
+            document.getElementById('reference-text').textContent = q.reference ? "📚 Sumber: " + q.reference : "";
             
             const feedbackArea = document.getElementById('feedback-area');
             feedbackArea.classList.remove('hidden');
