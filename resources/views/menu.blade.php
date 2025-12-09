@@ -142,18 +142,44 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             @foreach($categories as $category)
                 @php
+                    // Cek apakah nama icon sudah format FontAwesome (fa-...)
                     if (str_starts_with($category->icon_class, 'fa')) {
                         $faIcon = $category->icon_class;
                     } else {
-                        $iconMap = ['FiKey' => 'fas fa-key', 'GiDna1' => 'fas fa-dna', 'GiBrain' => 'fas fa-brain', 'FiCpu' => 'fas fa-microchip'];
+                        // Mapping manual dari nama icon Seeder ke FontAwesome
+                        $iconMap = [
+                            'FiKey' => 'fas fa-key',
+                            'GiDna1' => 'fas fa-dna',
+                            'GiBrain' => 'fas fa-brain',
+                            'FiCpu' => 'fas fa-microchip',
+                            
+                            // --- TAMBAHAN KATEGORI BARU ---
+                            'FiGlobe'  => 'fas fa-globe',             // Pemrograman Jaringan
+                            'FiShield' => 'fas fa-shield-alt',        // Etos Sandi III
+                            'FiLock'   => 'fas fa-lock',              // Kriptografi Terapan
+                            'FiRadio'  => 'fas fa-broadcast-tower',   // Sistem Telekomunikasi
+                            'FiCode'   => 'fas fa-code',              // Pemrograman Lanjutan
+                        ];
+                        
+                        // Default ke 'fas fa-star' jika tidak ditemukan di map
                         $faIcon = $iconMap[$category->icon_class] ?? 'fas fa-star';
                     }
+
+                    // Mapping Warna Gradient berdasarkan Slug Kategori
                     $colors = [
                         'fundamental-keamanan' => 'from-blue-500 to-cyan-500',
-                        'biologi-dasar' => 'from-green-500 to-emerald-500',
-                        'intelijen-dasar' => 'from-purple-500 to-pink-500',
-                        'elektronika-dasar' => 'from-orange-500 to-red-500',
+                        'biologi-dasar'        => 'from-green-500 to-emerald-500',
+                        'intelijen-dasar'      => 'from-purple-500 to-pink-500',
+                        'elektronika-dasar'    => 'from-orange-500 to-red-500',
+                        
+                        // --- WARNA UNTUK KATEGORI BARU ---
+                        'pemrograman-jaringan' => 'from-cyan-500 to-blue-600',
+                        'etos-sandi-iii'       => 'from-yellow-500 to-orange-500',
+                        'kriptografi-terapan'  => 'from-slate-600 to-slate-800',
+                        'sistem-telekomunikasi'=> 'from-indigo-500 to-purple-600',
+                        'pemrograman-lanjutan' => 'from-rose-500 to-pink-600',
                     ];
+                    
                     $gradient = $colors[$category->slug] ?? 'from-indigo-500 to-blue-500';
                 @endphp
 

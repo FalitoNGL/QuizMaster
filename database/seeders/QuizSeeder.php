@@ -42,10 +42,22 @@ class QuizSeeder extends Seeder
                 'slug' => 'pemrograman-jaringan', 'name' => 'Pemrograman Jaringan', 
                 'desc' => 'Konsep Socket, HTTP, dan Flask Python.', 'icon' => 'FiGlobe'
             ],
-            // --- KATEGORI BARU DITAMBAHKAN ---
             'etos-sandi-iii.json' => [
                 'slug' => 'etos-sandi-iii', 'name' => 'Etos Sandi III', 
                 'desc' => 'Wawasan kebangsaan dan etika profesi sandi.', 'icon' => 'FiShield'
+            ],
+            'kriptografi.json' => [
+                'slug' => 'kriptografi-terapan', 'name' => 'Kriptografi Terapan', 
+                'desc' => 'Algoritma enkripsi modern (AES, RSA, ECC).', 'icon' => 'FiLock'
+            ],
+            'sistem-telekomunikasi.json' => [
+                'slug' => 'sistem-telekomunikasi', 'name' => 'Sistem Telekomunikasi', 
+                'desc' => 'Konsep satelit, seluler, fiber optik, dan OSI Layer.', 'icon' => 'FiRadio'
+            ],
+            // --- KATEGORI BARU ---
+            'pemrograman-lanjutan.json' => [
+                'slug' => 'pemrograman-lanjutan', 'name' => 'Pemrograman Lanjutan', 
+                'desc' => 'SDLC, OOP, dan Arsitektur Web.', 'icon' => 'FiCode'
             ],
         ];
 
@@ -74,6 +86,11 @@ class QuizSeeder extends Seeder
             }
 
             foreach ($questions as $q) {
+                // --- VALIDASI: Lewati jika bukan soal (misal: header section) ---
+                if (!isset($q['question'])) {
+                    continue;
+                }
+
                 // Tentukan tipe soal, default ke 'single' jika tidak ada
                 $type = $q['type'] ?? 'single';
 
@@ -82,7 +99,7 @@ class QuizSeeder extends Seeder
                     'category_id' => $cat->id,
                     'question_text' => $q['question'],
                     'explanation' => $q['explanation'] ?? null,
-                    'reference' => $q['reference'] ?? null, // Tambahkan support reference jika ada di JSON
+                    'reference' => $q['reference'] ?? null,
                     'type' => $type
                 ]);
 
