@@ -8,7 +8,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
-    <!-- LIBRARY WEBSOCKET -->
     <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/laravel-echo/1.15.3/echo.iife.js"></script>
 
@@ -33,12 +32,10 @@
 </head>
 <body class="bg-gray-100 dark:bg-slate-900 text-slate-800 dark:text-white min-h-screen relative overflow-x-hidden transition-colors duration-300 selection:bg-pink-500 selection:text-white">
 
-    <!-- Background Animasi -->
     <div class="blob bg-purple-600 w-96 h-96 rounded-full top-0 left-0 mix-blend-multiply hidden dark:block"></div>
     <div class="blob bg-cyan-600 w-96 h-96 rounded-full bottom-0 right-0 mix-blend-multiply animation-delay-2000 hidden dark:block"></div>
     <div class="blob bg-pink-600 w-80 h-80 rounded-full top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 mix-blend-multiply animation-delay-4000 hidden dark:block"></div>
 
-    <!-- NAVBAR ATAS -->
     <div class="absolute top-6 right-6 flex gap-3 z-50 items-center">
         <button onclick="toggleTheme()" class="glass w-12 h-12 rounded-full flex items-center justify-center text-slate-600 dark:text-yellow-300 hover:bg-white/50 transition border border-gray-200 dark:border-white/10" title="Ganti Tema">
             <i id="theme-icon" class="fas fa-moon"></i>
@@ -81,7 +78,6 @@
         </a>
     </div>
 
-    <!-- KONTEN UTAMA -->
     <div class="container mx-auto px-4 py-12 relative z-10">
         <div class="text-center mb-12">
             @php
@@ -102,7 +98,6 @@
             <p class="text-slate-500 dark:text-slate-400 mt-2 text-lg">Siap untuk menguji pengetahuanmu hari ini?</p>
         </div>
 
-        <!-- MENU NAVIGASI -->
         <div class="flex flex-wrap justify-center gap-4 mb-16">
             <a href="{{ route('live.lobby') }}" class="glass px-6 py-3 rounded-full flex items-center gap-3 hover:bg-white/50 transition group border border-gray-200 dark:border-white/5 bg-white/50 dark:bg-transparent">
                 <div class="w-8 h-8 rounded-full bg-red-100 dark:bg-red-500/20 flex items-center justify-center text-red-600 dark:text-red-400 group-hover:scale-110 transition shadow-[0_0_15px_rgba(239,68,68,0.3)] animate-pulse">
@@ -138,11 +133,9 @@
             @endauth
         </div>
 
-        <!-- GRID KATEGORI -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             @foreach($categories as $category)
                 @php
-                    // Cek apakah nama icon sudah format FontAwesome (fa-...)
                     if (str_starts_with($category->icon_class, 'fa')) {
                         $faIcon = $category->icon_class;
                     } else {
@@ -159,6 +152,7 @@
                             'FiLock'   => 'fas fa-lock',              // Kriptografi Terapan
                             'FiRadio'  => 'fas fa-broadcast-tower',   // Sistem Telekomunikasi
                             'FiCode'   => 'fas fa-code',              // Pemrograman Lanjutan
+                            'FiServer' => 'fas fa-server',            // Sistem Operasi & Virtualisasi
                         ];
                         
                         // Default ke 'fas fa-star' jika tidak ditemukan di map
@@ -178,12 +172,12 @@
                         'kriptografi-terapan'  => 'from-slate-600 to-slate-800',
                         'sistem-telekomunikasi'=> 'from-indigo-500 to-purple-600',
                         'pemrograman-lanjutan' => 'from-rose-500 to-pink-600',
+                        'sistem-operasi-virtualisasi' => 'from-emerald-600 to-teal-600',
                     ];
                     
                     $gradient = $colors[$category->slug] ?? 'from-indigo-500 to-blue-500';
                 @endphp
 
-                <!-- KLIK KARTU = BUKA MODAL SETUP -->
                 <div onclick="openSetupModal('{{ $category->slug }}', '{{ $category->name }}', {{ $category->questions_count ?? 10 }})" class="glass glass-card rounded-3xl p-6 h-full flex flex-col items-center text-center transition-all duration-300 relative overflow-hidden group bg-white/60 dark:bg-white/5 border border-gray-200 dark:border-white/10 cursor-pointer">
                     <div class="absolute inset-0 bg-gradient-to-br {{ $gradient }} opacity-0 group-hover:opacity-10 dark:group-hover:opacity-20 transition duration-500 blur-xl"></div>
                     <div class="relative w-20 h-20 rounded-2xl bg-gradient-to-br {{ $gradient }} flex items-center justify-center text-3xl shadow-lg mb-6 group-hover:scale-110 transition duration-300 ring-4 ring-white/50 dark:ring-white/5">
@@ -208,7 +202,6 @@
         </div>
     </div>
 
-    <!-- MODAL SETUP SOLO KUIS -->
     <div id="setupModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-2xl border border-gray-200 dark:border-slate-600 shadow-2xl p-6 animate-bounce-in">
             <div class="flex justify-between items-center mb-6">
@@ -219,7 +212,6 @@
             <h4 id="modalCatName" class="text-lg text-blue-600 dark:text-blue-400 font-bold mb-4 text-center">Nama Kategori</h4>
 
             <form id="setupForm" method="GET">
-                <!-- Slider Soal -->
                 <div class="mb-6">
                     <div class="flex justify-between text-sm text-slate-500 dark:text-gray-400 mb-2">
                         <span class="font-bold">Jumlah Soal</span>
@@ -228,7 +220,6 @@
                     <input type="range" name="limit" id="qRange" min="1" max="50" value="10" oninput="document.getElementById('qCountDisplay').innerText = this.value">
                 </div>
 
-                <!-- Mode Waktu -->
                 <div class="mb-8">
                     <label class="block text-sm text-slate-500 dark:text-gray-400 mb-3 font-bold">Mode Waktu</label>
                     <div class="flex gap-2">
@@ -254,7 +245,6 @@
         </div>
     </div>
 
-    <!-- TOAST NOTIFICATION -->
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-3 pointer-events-none"></div>
 
     <script>
