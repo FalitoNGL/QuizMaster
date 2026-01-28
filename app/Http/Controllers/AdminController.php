@@ -14,6 +14,9 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class AdminController extends Controller
 {
+    // ... (Fungsi Login, Logout, Index, Categories, Import SAMA SEPERTI SEBELUMNYA) ...
+    // Salin bagian atas file asli Anda sampai sebelum method create()
+    
     // ==========================================
     // 1. OTENTIKASI ADMIN
     // ==========================================
@@ -99,8 +102,7 @@ class AdminController extends Controller
     }
 
     public function processImport(Request $request) {
-        // 1. SET TIME LIMIT AGAR TIDAK TIME OUT
-        set_time_limit(300); // 5 Menit (default biasanya 30 detik)
+        set_time_limit(300); 
 
         $request->validate([
             'category_id' => 'required|exists:categories,id',
@@ -111,14 +113,10 @@ class AdminController extends Controller
             $file = $request->file('file_import');
             $ext = $file->getClientOriginalExtension();
 
-            // --- LOGIKA EXCEL ---
             if (in_array($ext, ['xlsx', 'xls', 'csv'])) {
                 Excel::import(new QuestionsImport($request->category_id), $file);
                 return redirect()->route('admin.dashboard')->with('success', 'Import Excel Berhasil!');
-            } 
-            
-            // --- LOGIKA JSON ---
-            else {
+            } else {
                 $jsonContent = file_get_contents($file->getRealPath());
                 $data = json_decode($jsonContent, true);
 
@@ -126,9 +124,6 @@ class AdminController extends Controller
                     return back()->with('error', 'Format JSON tidak valid.');
                 }
 
-                // 2. OPTIMASI: AMBIL DATA LAMA SEKALIGUS (CACHE MEMORY)
-                // Daripada cek ke DB satu per satu di dalam loop, kita ambil semua teks soal yang sudah ada
-                // di kategori ini, lalu simpan di array PHP. Pengecekan in_array() jauh lebih cepat daripada SQL Query.
                 $existingQuestions = Question::where('category_id', $request->category_id)
                                             ->pluck('question_text')
                                             ->toArray();
@@ -142,13 +137,11 @@ class AdminController extends Controller
                         continue;
                     }
 
-                    // CEK DUPLIKAT (Versi Cepat: Cek di RAM, bukan DB)
                     if (in_array($item['question'], $existingQuestions)) {
                         $skipped++;
                         continue; 
                     }
 
-                    // Simpan Soal
                     $q = Question::create([
                         'category_id' => $request->category_id,
                         'type' => $item['type'] ?? 'single',
@@ -157,7 +150,6 @@ class AdminController extends Controller
                         'reference' => $item['reference'] ?? null,
                     ]);
 
-                    // Simpan Opsi (Support Single/Multiple/Ordering/Matching)
                     if ($q->type == 'matching') {
                         if (isset($item['pairs'])) {
                             foreach ($item['pairs'] as $pair) {
@@ -180,7 +172,6 @@ class AdminController extends Controller
                             ]);
                         }
                     } else {
-                        // Single / Multiple
                         foreach ($item['options'] as $idx => $optText) {
                             $isCorrect = false;
                             if (isset($item['correct'])) {
@@ -251,30 +242,7 @@ class AdminController extends Controller
                 'reference' => $request->reference
             ]);
 
-            if ($request->type == 'single') {
-                foreach ($request->options_single as $idx => $val) {
-                    Option::create(['question_id' => $q->id, 'option_text' => $val, 'is_correct' => ($idx == $request->correct_single)]);
-                }
-            } elseif ($request->type == 'multiple') {
-                foreach ($request->options_multiple as $idx => $val) {
-                    $isCorrect = isset($request->correct_multiple) && in_array($idx, $request->correct_multiple);
-                    Option::create(['question_id' => $q->id, 'option_text' => $val, 'is_correct' => $isCorrect]);
-                }
-            } elseif ($request->type == 'ordering') {
-                foreach ($request->options_ordering as $idx => $val) {
-                    Option::create(['question_id' => $q->id, 'option_text' => $val, 'correct_order' => $idx + 1, 'is_correct' => true]);
-                }
-            } elseif ($request->type == 'matching') {
-                $count = count($request->options_matching_left);
-                for ($i = 0; $i < $count; $i++) {
-                    Option::create([
-                        'question_id' => $q->id, 
-                        'option_text' => $request->options_matching_left[$i], 
-                        'matching_pair' => $request->options_matching_right[$i],
-                        'is_correct' => true
-                    ]);
-                }
-            }
+            $this->saveOptions($q, $request); // Refactored into helper method
 
             DB::commit();
             return redirect()->route('admin.dashboard')->with('success', 'Soal berhasil ditambahkan!');
@@ -294,38 +262,103 @@ class AdminController extends Controller
     public function update(Request $request, $id) {
         $q = Question::findOrFail($id);
         
-        $dataToUpdate = [
-            'category_id' => $request->category_id,
-            'question_text' => $request->question_text,
-            'explanation' => $request->explanation,
-            'reference' => $request->reference
-        ];
+        $request->validate([
+            'category_id' => 'required',
+            'question_text' => 'required',
+            'image' => 'nullable|image|max:2048',
+            'audio' => 'nullable|mimes:mp3,wav|max:5120',
+        ]);
 
-        if ($request->hasFile('image')) {
-            if ($q->image_path) Storage::disk('public')->delete($q->image_path);
-            $dataToUpdate['image_path'] = $request->file('image')->store('question_images', 'public');
+        DB::beginTransaction();
+        try {
+            $dataToUpdate = [
+                'category_id' => $request->category_id,
+                'question_text' => $request->question_text,
+                'explanation' => $request->explanation,
+                'reference' => $request->reference,
+                // Note: Kita tidak update 'type' agar struktur data tidak rusak, 
+                // kecuali Anda ingin handle logic perubahan tipe secara ekstrem.
+            ];
+
+            if ($request->hasFile('image')) {
+                if ($q->image_path) Storage::disk('public')->delete($q->image_path);
+                $dataToUpdate['image_path'] = $request->file('image')->store('question_images', 'public');
+            }
+            // Logic Hapus Gambar
+            if ($request->has('remove_image') && $request->remove_image == '1') {
+                if ($q->image_path) Storage::disk('public')->delete($q->image_path);
+                $dataToUpdate['image_path'] = null;
+            }
+
+            if ($request->hasFile('audio')) {
+                if ($q->audio_path) Storage::disk('public')->delete($q->audio_path);
+                $dataToUpdate['audio_path'] = $request->file('audio')->store('question_audio', 'public');
+            }
+            // Logic Hapus Audio
+            if ($request->has('remove_audio') && $request->remove_audio == '1') {
+                if ($q->audio_path) Storage::disk('public')->delete($q->audio_path);
+                $dataToUpdate['audio_path'] = null;
+            }
+
+            $q->update($dataToUpdate);
+
+            // STRATEGI: Hapus Semua Opsi Lama -> Buat Opsi Baru (Paling Aman untuk Dynamic Forms)
+            $q->options()->delete();
+            
+            // Gunakan helper yang sama dengan store()
+            $this->saveOptions($q, $request);
+
+            DB::commit();
+            return redirect()->route('admin.dashboard')->with('success', 'Soal berhasil diupdate!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Gagal Update: ' . $e->getMessage())->withInput();
         }
-        if ($request->hasFile('audio')) {
-            if ($q->audio_path) Storage::disk('public')->delete($q->audio_path);
-            $dataToUpdate['audio_path'] = $request->file('audio')->store('question_audio', 'public');
-        }
+    }
 
-        $q->update($dataToUpdate);
-
-        // Update opsi sederhana (hanya text) untuk Single Choice
-        if ($q->type == 'single' && $request->has('options')) {
-            $i = 0;
-            foreach ($q->options as $option) {
-                if (isset($request->options[$i])) {
-                    $option->update([
-                        'option_text' => $request->options[$i],
-                        'is_correct' => ($i == $request->correct_index)
-                    ]);
-                }
-                $i++;
+    // Helper untuk menyimpan opsi berdasarkan tipe (Reusability)
+    private function saveOptions($q, $request) {
+        if ($q->type == 'single' && $request->options_single) {
+            foreach ($request->options_single as $idx => $val) {
+                if(trim($val) === '') continue; // Skip kosong
+                Option::create([
+                    'question_id' => $q->id, 
+                    'option_text' => $val, 
+                    'is_correct' => ($idx == $request->correct_single)
+                ]);
+            }
+        } elseif ($q->type == 'multiple' && $request->options_multiple) {
+            foreach ($request->options_multiple as $idx => $val) {
+                if(trim($val) === '') continue;
+                $isCorrect = isset($request->correct_multiple) && in_array($idx, $request->correct_multiple);
+                Option::create([
+                    'question_id' => $q->id, 
+                    'option_text' => $val, 
+                    'is_correct' => $isCorrect
+                ]);
+            }
+        } elseif ($q->type == 'ordering' && $request->options_ordering) {
+            foreach ($request->options_ordering as $idx => $val) {
+                if(trim($val) === '') continue;
+                Option::create([
+                    'question_id' => $q->id, 
+                    'option_text' => $val, 
+                    'correct_order' => $idx + 1, 
+                    'is_correct' => true
+                ]);
+            }
+        } elseif ($q->type == 'matching' && $request->options_matching_left) {
+            $count = count($request->options_matching_left);
+            for ($i = 0; $i < $count; $i++) {
+                if(trim($request->options_matching_left[$i]) === '') continue;
+                Option::create([
+                    'question_id' => $q->id, 
+                    'option_text' => $request->options_matching_left[$i], 
+                    'matching_pair' => $request->options_matching_right[$i] ?? '',
+                    'is_correct' => true
+                ]);
             }
         }
-        return redirect()->route('admin.dashboard')->with('success', 'Soal berhasil diupdate!');
     }
 
     public function destroy($id) {
@@ -336,10 +369,6 @@ class AdminController extends Controller
         $q->delete();
         return redirect()->route('admin.dashboard')->with('success', 'Soal dihapus!');
     }
-
-    // ==========================================
-    // 6. FITUR BERSIH-BERSIH
-    // ==========================================
 
     public function cleanup() {
         if (!session('is_admin')) return redirect()->route('admin.login');
@@ -366,6 +395,6 @@ class AdminController extends Controller
             }
         }
 
-        return redirect()->route('admin.dashboard')->with('success', "Berhasil menghapus $deletedCount soal duplikat. Database bersih!");
+        return redirect()->route('admin.dashboard')->with('success', "Berhasil menghapus $deletedCount soal duplikat.");
     }
 }

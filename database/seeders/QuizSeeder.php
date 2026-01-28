@@ -58,7 +58,6 @@ class QuizSeeder extends Seeder
                 'slug' => 'pemrograman-lanjutan', 'name' => 'Pemrograman Lanjutan', 
                 'desc' => 'SDLC, OOP, dan Arsitektur Web.', 'icon' => 'FiCode'
             ],
-            // --- KATEGORI BARU ---
             'sistem-operasi-virtualisasi.json' => [
                 'slug' => 'sistem-operasi-virtualisasi', 'name' => 'Sistem Operasi & Virtualisasi', 
                 'desc' => 'Manajemen proses, memori, virtualisasi, dan kontainerisasi.', 'icon' => 'FiServer'
@@ -134,7 +133,7 @@ class QuizSeeder extends Seeder
                     }
                 } 
                 else {
-                    // Tipe Single & Multiple, Boolean
+                    // Tipe Single & Multiple (termasuk True/False yang kini jadi Single)
                     if(isset($q['options'])) {
                         foreach ($q['options'] as $idx => $optText) {
                             $isCorrect = false;
@@ -152,18 +151,6 @@ class QuizSeeder extends Seeder
                                 'is_correct' => $isCorrect
                             ]);
                         }
-                    } elseif($type === 'boolean') {
-                        // Khusus Tipe Boolean (True/False)
-                        Option::create([
-                            'question_id' => $quest->id,
-                            'option_text' => 'True',
-                            'is_correct' => $q['correct'] === true
-                        ]);
-                        Option::create([
-                            'question_id' => $quest->id,
-                            'option_text' => 'False',
-                            'is_correct' => $q['correct'] === false
-                        ]);
                     }
                 }
             }
