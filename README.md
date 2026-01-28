@@ -1,59 +1,387 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🚀 QuizMaster - Real-Time Multiplayer Quiz Platform
+
+![Laravel](https://img.shields.io/badge/Laravel_11-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS_4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-005C84?style=for-the-badge&logo=mysql&logoColor=white)
+![PHP](https://img.shields.io/badge/PHP_8.2+-777BB4?style=for-the-badge&logo=php&logoColor=white)
+![Google](https://img.shields.io/badge/Google_OAuth-4285F4?style=for-the-badge&logo=google&logoColor=white)
+![WebSocket](https://img.shields.io/badge/WebSocket-010101?style=for-the-badge&logo=socket.io&logoColor=white)
+
+## 📌 Project Overview
+
+**QuizMaster** adalah platform kuis interaktif berbasis web yang dirancang untuk kebutuhan evaluasi akademik maupun hiburan. Aplikasi ini mendukung fitur **Real-Time Multiplayer** (Live Duel), sistem **Gamifikasi** (Achievement & Leaderboard), fitur **Sosial** (Follow & Profile), serta manajemen soal yang komprehensif.
+
+Dibangun menggunakan arsitektur **MVC** dengan keamanan tingkat lanjut (Server-Side Scoring) untuk mencegah kecurangan dalam penilaian.
+
+---
+
+## 📑 SRS (Software Requirements Specification)
+
+### 1. Functional Requirements
+
+| Modul | Deskripsi |
+|-------|-----------|
+| **Autentikasi** | Login via Google OAuth (Laravel Socialite), session management |
+| **Manajemen Kuis** | CRUD Kategori, Soal multi-tipe (Single, Multiple, Ordering, Matching), Import JSON |
+| **Mode Single Player** | Pengerjaan kuis mandiri dengan timer dan feedback instan |
+| **Mode Live Duel** | Kompetisi real-time via WebSocket (Laravel Reverb) dalam Game Room |
+| **Challenge System** | Tantangan langsung antar user dengan notifikasi real-time |
+| **Sistem Penilaian** | Perhitungan skor 100% di server (Anti-Cheat) dengan bonus waktu |
+| **Gamifikasi** | Achievement badges (Newbie, Veteran, Sharpshooter, Speedster) |
+| **Fitur Sosial** | Profil publik, sistem follow/following, Social Hub |
+| **Statistics** | Riwayat pengerjaan, statistik performa, review jawaban |
+
+### 2. Non-Functional Requirements
+
+- **Security:** Input validation ketat, CSRF Protection, Server-Side Scoring, Participant Verification
+- **Performance:** Real-time scoring via WebSocket, optimized database queries
+- **Reliability:** Multiple concurrent users support dalam Live Duel
+- **Interoperability:** REST API untuk integrasi aplikasi Mobile
+
+---
+
+## 🛠 Feature List
+
+### 👤 User Features
+
+| Fitur | Route | Deskripsi |
+|-------|-------|-----------|
+| **Menu Kategori** | `/` | Pilih kategori kuis yang tersedia |
+| **Play Quiz** | `/quiz/{slug}` | Kerjakan soal dengan timer dan feedback instan |
+| **Review Jawaban** | `/review/{id}` | Lihat pembahasan dan jawaban benar |
+| **Leaderboard** | `/leaderboard` | Peringkat skor tertinggi global |
+| **Achievements** | `/achievements` | Koleksi badges yang telah diraih |
+| **Statistics** | `/stats` | Statistik performa pribadi |
+| **Settings** | `/settings` | Reset riwayat dan preferensi |
+
+### 🎮 Live Duel Features
+
+| Fitur | Route | Deskripsi |
+|-------|-------|-----------|
+| **Game Lobby** | `/live` | Buat atau join room untuk Live Duel |
+| **Create Room** | `POST /live/create` | Buat room dengan kategori dan durasi custom |
+| **Join Room** | `POST /live/join` | Bergabung dengan kode room 5 karakter |
+| **Live Gameplay** | `/live/{roomCode}` | Bermain real-time dengan lawan |
+| **Send Challenge** | `POST /live/challenge/send` | Tantang user lain secara langsung |
+| **Accept/Reject** | `/live/challenge/accept/{id}` | Terima atau tolak tantangan |
+
+### 👥 Social Features
+
+| Fitur | Route | Deskripsi |
+|-------|-------|-----------|
+| **Social Hub** | `/social` | Pusat aktivitas sosial (wajib login) |
+| **Public Profile** | `/profile/{id}` | Lihat profil user lain |
+| **Edit Profile** | `/profile/edit/me` | Edit profil pribadi |
+| **Follow User** | `POST /follow/{id}` | Follow/unfollow user lain |
+
+### 🛡️ Admin Features
+
+| Fitur | Route | Deskripsi |
+|-------|-------|-----------|
+| **Dashboard** | `/admin` | Ringkasan statistik dan aktivitas |
+| **CRUD Soal** | `/admin/create`, `/admin/edit/{id}` | Tambah, edit, hapus soal |
+| **Import JSON** | `/admin/import` | Import soal massal dari file JSON |
+| **Manage Categories** | `/admin/categories` | CRUD kategori kuis |
+| **Cleanup** | `/admin/cleanup` | Bersihkan data sampah |
+
+---
+
+## 📊 Database Schema (ERD)
+
+### Tabel Utama
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   users     │     │  categories │     │  questions  │
+├─────────────┤     ├─────────────┤     ├─────────────┤
+│ id          │     │ id          │     │ id          │
+│ name        │     │ name        │     │ category_id │◄──┐
+│ email       │     │ slug        │     │ type        │   │
+│ google_id   │     │ description │     │ question_text│  │
+│ avatar      │     │ icon_class  │     │ explanation │   │
+│ bio         │     └─────────────┘     │ image_path  │   │
+│ xp          │            │            │ audio_path  │   │
+└─────────────┘            │            └─────────────┘   │
+      │                    │                   │          │
+      │              ┌─────┴─────┐             │          │
+      │              │           │             │          │
+      ▼              ▼           ▼             ▼          │
+┌─────────────┐ ┌─────────────┐ ┌─────────────┐           │
+│  results    │ │  options    │ │result_answers│          │
+├─────────────┤ ├─────────────┤ ├─────────────┤           │
+│ id          │ │ id          │ │ id          │           │
+│ user_id     │ │ question_id │ │ result_id   │           │
+│ category_id │─┘ │ option_text │ │ question_id │          │
+│ score       │   │ is_correct  │ │ option_id   │          │
+│ correct_ans │   │ matching_pair│ │ is_correct │          │
+│ total_ques  │   │ correct_order│ └─────────────┘         │
+└─────────────┘   └─────────────┘                         │
+                                                          │
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐   │
+│ game_rooms  │     │ challenges  │     │achievements │   │
+├─────────────┤     ├─────────────┤     ├─────────────┤   │
+│ id          │     │ id          │     │ id          │   │
+│ room_code   │◄────│ room_code   │     │ name        │   │
+│ category_id │─────┼─────────────┼─────│ slug        │   │
+│ host_id     │     │ sender_id   │     │ description │   │
+│ challenger_id│    │ target_id   │     │ icon        │   │
+│ host_score  │     │ status      │     └─────────────┘   │
+│ challenger_ │     │ winner_id   │            │          │
+│ status      │     └─────────────┘            │          │
+│ duration    │                          ┌─────┴─────┐    │
+│ total_ques  │                          │           │    │
+└─────────────┘                          ▼           │    │
+                               ┌─────────────────┐   │    │
+                               │player_achievements│  │   │
+                               ├─────────────────┤   │    │
+                               │ user_id         │   │    │
+                               │ player_name     │   │    │
+                               │ achievement_id  │◄──┘    │
+                               └─────────────────┘        │
+```
+
+### Tipe Soal yang Didukung
+
+| Type | Deskripsi |
+|------|-----------|
+| `single` | Pilihan ganda (1 jawaban benar) |
+| `multiple` | Pilihan ganda (>1 jawaban benar) |
+| `ordering` | Urutkan opsi sesuai urutan benar |
+| `matching` | Pasangkan opsi kiri dengan kanan |
+
+---
+
+## 🔄 SDLC (System Development Life Cycle)
+
+Pengembangan **QuizMaster** mengikuti model **Waterfall**:
+
+```
+┌──────────────────┐
+│ 1. REQUIREMENT   │ → Analisis kebutuhan Live Game, Anti-Cheat, Gamifikasi
+└────────┬─────────┘
+         ▼
+┌──────────────────┐
+│ 2. SYSTEM DESIGN │ → Rancang ERD, UI/UX, API Specification
+└────────┬─────────┘
+         ▼
+┌──────────────────┐
+│ 3. IMPLEMENTATION│ → Laravel 11 + Tailwind CSS + MySQL + Reverb
+└────────┬─────────┘
+         ▼
+┌──────────────────┐
+│ 4. TESTING       │ → PHPUnit (16 tests, 48 assertions) + Black Box
+└────────┬─────────┘
+         ▼
+┌──────────────────┐
+│ 5. DEPLOYMENT    │ → Server configuration, SSL, optimization
+└────────┬─────────┘
+         ▼
+┌──────────────────┐
+│ 6. MAINTENANCE   │ → Bug fixes, feature updates, monitoring
+└──────────────────┘
+```
+
+---
+
+## 💻 Tech Stack
+
+### Backend
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| PHP | 8.2+ | Server-side language |
+| Laravel | 11.x | MVC Framework |
+| MySQL | 8.0 | Relational Database |
+| Laravel Reverb | 1.x | WebSocket for Real-time |
+| Laravel Socialite | 5.x | Google OAuth |
+| Maatwebsite Excel | 3.x | Excel Export/Import |
+
+### Frontend
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| Blade Templates | - | Server-side rendering |
+| Tailwind CSS | 4.x | Utility-first CSS |
+| Vite | 7.x | Build tool |
+| Alpine.js | - | Lightweight reactivity |
+| Pusher JS | 8.x | WebSocket client |
+| Laravel Echo | 2.x | Real-time events |
+
+---
+
+## 🧪 Testing
+
+### Menjalankan Test
+
+```bash
+php artisan test
+```
+
+### Test Coverage (16 Tests, 48 Assertions)
+
+| Category | Tests |
+|----------|-------|
+| **User Flow** | Login → Menu → Quiz → Score |
+| **API Endpoints** | `/api/categories`, `/api/quiz/{id}`, `/api/leaderboard`, `/api/achievements` |
+| **Security** | Auth required for Live, Social, Admin routes |
+| **Input Validation** | Invalid data rejection, parameter bounds |
+
+---
+
+## 📡 REST API Endpoints
+
+Base URL: `http://localhost:8000/api`
+
+| Method | Endpoint | Params | Response |
+|--------|----------|--------|----------|
+| GET | `/categories` | - | Semua kategori + questions_count |
+| GET | `/quiz/{id}` | `?limit=10` | Soal acak (jawaban disembunyikan) |
+| GET | `/leaderboard` | `?limit=20` | Top skor |
+| GET | `/achievements` | `?user_id=X` | Achievement user |
+
+### Contoh Response
+
+```json
+// GET /api/categories
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "Jaringan Komputer",
+      "slug": "jaringan-komputer",
+      "questions_count": 50
+    }
+  ]
+}
+```
+
+---
+
+## 🚀 Installation
+
+### Requirements
+- PHP 8.2+
+- Composer
+- Node.js 18+
+- MySQL 8.0
+- Git
+
+### Step-by-Step
+
+```bash
+# 1. Clone repository
+git clone https://github.com/FalitoNGL/QuizMaster.git
+cd QuizMaster/quiz-master-backend
+
+# 2. Install PHP dependencies
+composer install
+
+# 3. Install JS dependencies & build
+npm install
+npm run build
+
+# 4. Setup environment
+cp .env.example .env
+php artisan key:generate
+
+# 5. Configure database in .env
+# DB_DATABASE=quizmaster
+# DB_USERNAME=root
+# DB_PASSWORD=
+
+# 6. Run migrations & seeders
+php artisan migrate:fresh --seed
+
+# 7. Start development server
+php artisan serve
+
+# 8. (Optional) Start all services
+composer dev
+```
+
+### Development Mode (All Services)
+
+```bash
+composer dev
+# Runs: Laravel Server + Queue + Logs + Vite concurrently
+```
+
+---
+
+## 🔐 Security Features
+
+| Feature | Implementation |
+|---------|----------------|
+| **Server-Side Scoring** | Skor dihitung 100% di server, client hanya kirim jawaban |
+| **Input Validation** | Semua input divalidasi dengan rules ketat (tipe, range, regex) |
+| **Anti Mass Assignment** | Explicit column assignment, tidak pakai `$request->all()` |
+| **Participant Verification** | Verifikasi user adalah peserta sebelum aksi game |
+| **CSRF Protection** | Token CSRF di semua form POST |
+| **Route Protection** | Middleware `auth` untuk fitur yang memerlukan login |
+
+---
+
+## 📁 Project Structure
+
+```
+quiz-master-backend/
+├── app/
+│   ├── Http/Controllers/
+│   │   ├── Api/
+│   │   │   └── ApiController.php      # REST API
+│   │   ├── AdminController.php        # Admin CRUD
+│   │   ├── AuthController.php         # Google OAuth
+│   │   ├── LiveGameController.php     # Live Duel
+│   │   ├── ProfileController.php      # Social Features
+│   │   ├── QuizController.php         # Quiz Logic
+│   │   └── ...
+│   ├── Events/
+│   │   ├── GameUpdated.php            # WebSocket event
+│   │   └── NewChallengeReceived.php
+│   └── Models/
+│       ├── Category.php
+│       ├── Question.php
+│       ├── Option.php
+│       ├── Result.php
+│       ├── GameRoom.php
+│       ├── Challenge.php
+│       ├── Achievement.php
+│       └── User.php
+├── database/
+│   ├── migrations/                    # Schema definitions
+│   └── seeders/                       # Sample data
+├── routes/
+│   ├── web.php                        # Web routes
+│   └── api.php                        # API routes
+├── tests/
+│   └── Feature/
+│       └── ComplexQuizTest.php        # 14 test cases
+└── resources/
+    └── views/                         # Blade templates
+```
+
+---
+
+## 📸 Screenshots
+
+> Tambahkan screenshot ke folder `docs/screenshots/`
+
+| Screen | Path |
+|--------|------|
+| Login | `docs/screenshots/01_login.png` |
+| Menu | `docs/screenshots/02_menu.png` |
+| Quiz | `docs/screenshots/03_quiz.png` |
+| Live Lobby | `docs/screenshots/04_live_lobby.png` |
+| Leaderboard | `docs/screenshots/05_leaderboard.png` |
+
+---
+
+## 📄 License
+
+MIT License - Free to use and modify.
+
+---
 
 <p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+Created with ❤️ by <b>FalitoNGL</b> for Final Project<br>
+Laravel 11 • Tailwind CSS 4 • MySQL • WebSocket
 </p>
-
-## About Laravel
-
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
-
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
-
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
-
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-## Laravel Sponsors
-
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
-
-### Premium Partners
-
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
