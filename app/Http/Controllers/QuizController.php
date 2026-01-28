@@ -25,12 +25,16 @@ class QuizController extends Controller
 
     public function show($slug, Request $request)
     {
-        $category = Category::where('slug', $slug)->firstOrFail();
-        $limit = $request->input('limit', 10); 
-        $timer = $request->input('timer', 30); 
+        // SECURITY: Validasi input parameter
+        $validated = $request->validate([
+            'limit' => 'nullable|integer|min:1|max:100',
+            'timer' => 'nullable|integer|min:5|max:300',
+        ]);
 
-        // Ambil soal (sembunyikan field is_correct jika ingin sangat ketat, 
-        // tapi untuk single page app sederhana kita biarkan agar frontend mudah menghandle visual)
+        $category = Category::where('slug', $slug)->firstOrFail();
+        $limit = $validated['limit'] ?? 10; 
+        $timer = $validated['timer'] ?? 30; 
+
         $questions = Question::with('options')
                         ->where('category_id', $category->id)
                         ->inRandomOrder()
@@ -51,6 +55,11 @@ class QuizController extends Controller
 
     public function review($id)
     {
+        // SECURITY: Validasi ID adalah integer positif
+        if (!is_numeric($id) || $id <= 0) {
+            abort(404);
+        }
+
         $result = Result::with(['category', 'answers.question.options', 'answers.option'])
                         ->findOrFail($id);
         return view('review', compact('result'));
@@ -59,29 +68,53 @@ class QuizController extends Controller
     /**
      * PROSES SIMPAN SKOR (SECURE VERSION)
      * Menghitung skor di server berdasarkan jawaban user.
+     * 
+     * SECURITY NOTES:
+     * - Skor dihitung 100% di server, tidak menerima input skor dari client
+     * - Semua input divalidasi ketat
+     * - Menggunakan explicit column assignment untuk mencegah mass assignment
      */
     public function submit(Request $request)
     {
-        // 1. Validasi Input (Hanya data esensial)
+        // 1. SECURITY: Validasi Input Ketat
         $data = $request->validate([
-            'category_id' => 'required|exists:categories,id',
-            'player_name' => 'required|string|max:50',
-            'answers' => 'required|array', // Array jawaban dari JS
+            'category_id' => 'required|integer|exists:categories,id',
+            'player_name' => 'required|string|max:50|regex:/^[a-zA-Z0-9\s\-\_]+$/',
+            'answers' => 'required|array|min:1|max:100',
+            'answers.*.question_id' => 'required|integer|exists:questions,id',
+            'answers.*.answer' => 'present', // Bisa null, single value, atau array
+            'answers.*.time_left' => 'nullable|integer|min:0|max:300',
         ]);
 
-        // 2. Tentukan User
+        // 2. Tentukan User (logged in atau guest)
         $userId = null;
+        $playerName = $data['player_name'];
+        
         if (Auth::check()) {
             $userId = Auth::id();
-            $data['player_name'] = Auth::user()->name; 
+            $playerName = Auth::user()->name; // Override dengan nama akun
         }
-        session(['current_player' => $data['player_name']]);
+        session(['current_player' => $playerName]);
 
-        // 3. LOGIKA HITUNG SKOR (SERVER-SIDE)
+        // 3. SECURITY: Validasi bahwa soal milik kategori yang diklaim
+        $categoryId = $data['category_id'];
+        $questionIds = collect($data['answers'])->pluck('question_id')->unique();
+        
+        $validQuestionCount = Question::whereIn('id', $questionIds)
+            ->where('category_id', $categoryId)
+            ->count();
+        
+        if ($validQuestionCount !== $questionIds->count()) {
+            return response()->json([
+                'message' => 'Error: Soal tidak valid untuk kategori ini.',
+            ], 422);
+        }
+
+        // 4. LOGIKA HITUNG SKOR (100% SERVER-SIDE - ANTI CHEAT)
         $calculatedScore = 0;
         $correctCount = 0;
         $totalQuestions = count($data['answers']);
-        $processedAnswers = []; // Penampung untuk disimpan ke DB
+        $processedAnswers = [];
 
         foreach ($data['answers'] as $ans) {
             $question = Question::with('options')->find($ans['question_id']);
@@ -89,44 +122,49 @@ class QuizController extends Controller
 
             $isCorrect = false;
             $userAnswerVal = $ans['answer'] ?? null; 
-            $timeLeft = $ans['time_left'] ?? 0; // Bonus waktu
+            $timeLeft = min(max((int)($ans['time_left'] ?? 0), 0), 300); // Clamp 0-300
 
             // A. Single Choice
             if ($question->type === 'single') {
-                $opt = $question->options->where('id', $userAnswerVal)->first();
-                $isCorrect = $opt && $opt->is_correct;
-                // Simpan ID opsi untuk referensi
-                $saveOptionId = $userAnswerVal;
+                if (is_numeric($userAnswerVal)) {
+                    $opt = $question->options->where('id', (int)$userAnswerVal)->first();
+                    $isCorrect = $opt && $opt->is_correct;
+                }
+                $saveOptionId = is_numeric($userAnswerVal) ? (int)$userAnswerVal : null;
             } 
             // B. Multiple Choice
             elseif ($question->type === 'multiple' && is_array($userAnswerVal)) {
+                $userIds = array_map('intval', $userAnswerVal);
                 $correctIds = $question->options->where('is_correct', 1)->pluck('id')->toArray();
-                sort($userAnswerVal); 
+                sort($userIds); 
                 sort($correctIds);
-                $isCorrect = $userAnswerVal == $correctIds;
-                $saveOptionId = 0; // 0 menandakan jawaban kompleks
+                $isCorrect = $userIds == $correctIds;
+                $saveOptionId = null;
             }
             // C. Ordering
             elseif ($question->type === 'ordering' && is_array($userAnswerVal)) {
+                $userOrder = array_map('intval', $userAnswerVal);
                 $correctSequence = $question->options->sortBy('correct_order')->pluck('id')->toArray();
-                $isCorrect = array_values($userAnswerVal) === array_values($correctSequence);
-                $saveOptionId = 0;
+                $isCorrect = array_values($userOrder) === array_values($correctSequence);
+                $saveOptionId = null;
             }
             // D. Matching
             elseif ($question->type === 'matching' && is_array($userAnswerVal)) {
                 $allMatch = true;
                 foreach ($userAnswerVal as $item) {
-                    // $item structure: {left_id: 1, pair_text: 'Jawab A'}
-                    $opt = $question->options->where('id', $item['left_id'])->first();
+                    if (!is_array($item) || !isset($item['left_id']) || !isset($item['pair_text'])) {
+                        $allMatch = false;
+                        break;
+                    }
+                    $opt = $question->options->where('id', (int)$item['left_id'])->first();
                     if (!$opt || $opt->matching_pair !== $item['pair_text']) {
                         $allMatch = false;
                         break;
                     }
                 }
                 $isCorrect = $allMatch;
-                $saveOptionId = 0;
+                $saveOptionId = null;
             } else {
-                // Tipe tidak dikenal atau format salah
                 $isCorrect = false;
                 $saveOptionId = null;
             }
@@ -137,7 +175,6 @@ class QuizController extends Controller
                 $correctCount++;
             }
 
-            // Siapkan data untuk result_answers
             $processedAnswers[] = [
                 'question_id' => $question->id,
                 'option_id' => $saveOptionId,
@@ -145,50 +182,49 @@ class QuizController extends Controller
             ];
         }
 
-        // 4. Simpan Header Hasil
-        $result = Result::create([
-            'user_id' => $userId,
-            'player_name' => $data['player_name'],
-            'category_id' => $data['category_id'],
-            'score' => $calculatedScore, // Skor hasil hitungan server
-            'correct_answers' => $correctCount,
-            'total_questions' => $totalQuestions,
-        ]);
+        // 5. SECURITY: Simpan dengan explicit columns (Anti Mass Assignment)
+        $result = new Result();
+        $result->user_id = $userId;
+        $result->player_name = $playerName;
+        $result->category_id = $categoryId;
+        $result->score = $calculatedScore;
+        $result->correct_answers = $correctCount;
+        $result->total_questions = $totalQuestions;
+        $result->save();
 
-        // 5. Simpan Detail Jawaban
+        // 6. Simpan Detail Jawaban
         foreach ($processedAnswers as $pAns) {
             $optId = $pAns['option_id'];
             
-            // Fix foreign key constraint jika 0
-            if ($optId === 0 || $optId === null) {
+            // Fix foreign key constraint jika null
+            if ($optId === null) {
                 $firstOpt = Option::where('question_id', $pAns['question_id'])->first();
                 $optId = $firstOpt ? $firstOpt->id : null;
             }
 
             if ($optId) {
-                ResultAnswer::create([
-                    'result_id' => $result->id,
-                    'question_id' => $pAns['question_id'],
-                    'option_id' => $optId,
-                    'is_correct' => $pAns['is_correct'],
-                ]);
+                $resultAnswer = new ResultAnswer();
+                $resultAnswer->result_id = $result->id;
+                $resultAnswer->question_id = $pAns['question_id'];
+                $resultAnswer->option_id = $optId;
+                $resultAnswer->is_correct = $pAns['is_correct'];
+                $resultAnswer->save();
             }
         }
 
-        // 6. Cek Achievements
-        // Kita bungkus data agar sesuai parameter checkAchievements
+        // 7. Cek Achievements
         $achievData = [
             'score' => $calculatedScore,
             'correct' => $correctCount,
             'total' => $totalQuestions
         ];
-        $newBadges = $this->checkAchievements($data['player_name'], $userId, $achievData);
+        $newBadges = $this->checkAchievements($playerName, $userId, $achievData);
 
         return response()->json([
             'message' => 'Skor berhasil disimpan!',
             'result_id' => $result->id,
             'new_badges' => $newBadges,
-            'real_score' => $calculatedScore, // Kembalikan skor asli ke frontend
+            'real_score' => $calculatedScore,
             'correct_count' => $correctCount
         ]);
     }

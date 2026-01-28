@@ -25,35 +25,43 @@ class LiveGameController extends Controller
 
     public function createRoom(Request $request)
     {
-        $request->validate([
-            'category_id' => 'required|exists:categories,id',
+        // SECURITY: Validasi input ketat
+        $validated = $request->validate([
+            'category_id' => 'required|integer|exists:categories,id',
             'total_questions' => 'required|integer|min:3|max:50',
             'duration' => 'required|integer|min:5|max:120',
         ]);
 
-        $count = Question::where('category_id', $request->category_id)->count();
-        if ($count < $request->total_questions) {
+        $count = Question::where('category_id', $validated['category_id'])->count();
+        if ($count < $validated['total_questions']) {
             return back()->with('error', "Kategori kurang soal (Ada: $count).");
         }
 
         $roomCode = strtoupper(Str::random(5));
         
-        GameRoom::create([
-            'room_code' => $roomCode,
-            'category_id' => $request->category_id,
-            'host_id' => Auth::id(),
-            'status' => 'waiting',
-            'total_questions' => $request->total_questions,
-            'duration' => $request->duration
-        ]);
+        // SECURITY: Explicit column assignment (tidak ada mass assignment)
+        $room = new GameRoom();
+        $room->room_code = $roomCode;
+        $room->category_id = $validated['category_id'];
+        $room->host_id = Auth::id();
+        $room->status = 'waiting';
+        $room->total_questions = $validated['total_questions'];
+        $room->duration = $validated['duration'];
+        $room->host_score = 0;
+        $room->challenger_score = 0;
+        $room->save();
 
         return redirect()->route('live.play', $roomCode);
     }
 
     public function joinRoom(Request $request)
     {
-        $request->validate(['room_code' => 'required']);
-        $room = GameRoom::where('room_code', $request->room_code)->first();
+        // SECURITY: Validasi room_code
+        $validated = $request->validate([
+            'room_code' => 'required|string|alpha_num|size:5'
+        ]);
+
+        $room = GameRoom::where('room_code', strtoupper($validated['room_code']))->first();
 
         if (!$room) return back()->with('error', 'Room tidak ditemukan!');
         
@@ -65,7 +73,10 @@ class LiveGameController extends Controller
             return back()->with('error', 'Game sudah berjalan atau selesai!');
         }
 
-        $room->update(['challenger_id' => Auth::id(), 'status' => 'playing']);
+        // SECURITY: Update dengan spesifik kolom saja
+        $room->challenger_id = Auth::id();
+        $room->status = 'playing';
+        $room->save();
 
         try { broadcast(new GameUpdated($room)); } catch (\Exception $e) {}
 
@@ -74,14 +85,19 @@ class LiveGameController extends Controller
 
     public function play($roomCode)
     {
+        // SECURITY: Sanitize room code
+        $roomCode = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $roomCode));
+
         $room = GameRoom::where('room_code', $roomCode)->with(['host', 'challenger', 'category'])->firstOrFail();
         
-        // Ambil soal. Idealnya 'is_correct' disembunyikan (makeHidden) tapi
-        // frontend saat ini butuh untuk visual feedback instan (merah/hijau).
-        // Keamanan utama ada di endpoint updateScore.
+        // SECURITY: Verifikasi user adalah peserta game
+        if (Auth::id() !== $room->host_id && Auth::id() !== $room->challenger_id && $room->status !== 'waiting') {
+            abort(403, 'Anda bukan peserta game ini.');
+        }
+
         $questions = Question::with('options')
                         ->where('category_id', $room->category_id)
-                        ->inRandomOrder($room->id) // Seed sama untuk kedua pemain
+                        ->inRandomOrder($room->id)
                         ->take($room->total_questions)
                         ->get();
 
@@ -92,29 +108,43 @@ class LiveGameController extends Controller
 
     public function updateScore(Request $request)
     {
-        // Validasi input: Kita terima JAWABAN, bukan SKOR.
-        $request->validate([
-            'room_code' => 'required',
-            'question_id' => 'required|exists:questions,id',
-            'time_left' => 'integer|min:0',
+        // SECURITY: Validasi input ketat
+        $validated = $request->validate([
+            'room_code' => 'required|string|alpha_num|size:5',
+            'question_id' => 'required|integer|exists:questions,id',
+            'time_left' => 'nullable|integer|min:0|max:300',
             'answer' => 'required' // Bisa single ID atau Array
         ]);
 
-        $room = GameRoom::where('room_code', $request->room_code)->firstOrFail();
+        $room = GameRoom::where('room_code', strtoupper($validated['room_code']))->firstOrFail();
         
-        // Cek status game
+        // SECURITY: Verifikasi user adalah peserta game
+        if (Auth::id() !== $room->host_id && Auth::id() !== $room->challenger_id) {
+            return response()->json(['status' => 'error', 'message' => 'Not a participant'], 403);
+        }
+
         if ($room->status !== 'playing') {
             return response()->json(['status' => 'error', 'message' => 'Game not playing']);
         }
 
+        // SECURITY: Verifikasi soal benar-benar milik kategori room ini
+        $question = Question::where('id', $validated['question_id'])
+                            ->where('category_id', $room->category_id)
+                            ->first();
+        
+        if (!$question) {
+            return response()->json(['status' => 'error', 'message' => 'Invalid question']);
+        }
+
         // VALIDASI JAWABAN DI SERVER (ANTI-CHEAT)
-        $isCorrect = $this->validateAnswer($request);
+        $isCorrect = $this->validateAnswer($question, $validated['answer']);
 
         if ($isCorrect) {
-            // Hitung Poin: Basis 100 + Bonus Waktu
-            $points = 100 + ($request->time_left ?? 0);
+            // Hitung Poin: Basis 100 + Bonus Waktu (max 300)
+            $timeLeft = min(max((int)($validated['time_left'] ?? 0), 0), 300);
+            $points = 100 + $timeLeft;
             
-            // Update skor di DB
+            // Update skor di DB dengan increment (aman dari race condition)
             if ($room->host_id == Auth::id()) {
                 $room->increment('host_score', $points);
             } elseif ($room->challenger_id == Auth::id()) {
@@ -131,45 +161,43 @@ class LiveGameController extends Controller
     }
 
     /**
-     * Logika Validasi Jawaban Kompleks
+     * Logika Validasi Jawaban Kompleks (Server-Side Anti-Cheat)
      */
-    private function validateAnswer($request)
+    private function validateAnswer($question, $input)
     {
-        $question = Question::with('options')->find($request->question_id);
-        if (!$question) return false;
-
+        $question->load('options');
         $type = $question->type;
-        $input = $request->input('answer'); 
 
         // 1. Single Choice (Input: Option ID)
         if ($type === 'single') {
-            $option = $question->options->where('id', $input)->first();
+            if (!is_numeric($input)) return false;
+            $option = $question->options->where('id', (int)$input)->first();
             return $option && $option->is_correct;
         }
 
         // 2. Multiple Choice (Input: Array of Option IDs)
         if ($type === 'multiple' && is_array($input)) {
+            $userIds = array_map('intval', $input);
             $correctIds = $question->options->where('is_correct', 1)->pluck('id')->toArray();
-            sort($input); 
+            sort($userIds); 
             sort($correctIds);
-            return $input == $correctIds;
+            return $userIds == $correctIds;
         }
 
         // 3. Ordering (Input: Array of Option IDs in user order)
         if ($type === 'ordering' && is_array($input)) {
+            $userOrder = array_map('intval', $input);
             $correctSequence = $question->options->sortBy('correct_order')->pluck('id')->toArray();
-            // Reset keys array agar bisa dibandingkan (0,1,2...)
-            return array_values($input) === array_values($correctSequence);
+            return array_values($userOrder) === array_values($correctSequence);
         }
 
         // 4. Matching (Input: Array of objects {left_id, pair_text})
         if ($type === 'matching' && is_array($input)) {
             foreach ($input as $item) {
-                // Pastikan item punya struktur yg benar
-                if (!isset($item['left_id']) || !isset($item['pair_text'])) return false;
-
-                $opt = $question->options->where('id', $item['left_id'])->first();
-                // Jika opsi tidak ditemukan atau pasangannya salah
+                if (!is_array($item) || !isset($item['left_id']) || !isset($item['pair_text'])) {
+                    return false;
+                }
+                $opt = $question->options->where('id', (int)$item['left_id'])->first();
                 if (!$opt || $opt->matching_pair !== $item['pair_text']) {
                     return false;
                 }
@@ -182,11 +210,22 @@ class LiveGameController extends Controller
 
     public function finishGame(Request $request)
     {
-        $room = GameRoom::where('room_code', $request->room_code)->firstOrFail();
+        // SECURITY: Validasi room_code
+        $validated = $request->validate([
+            'room_code' => 'required|string|alpha_num|size:5'
+        ]);
+
+        $room = GameRoom::where('room_code', strtoupper($validated['room_code']))->firstOrFail();
+
+        // SECURITY: Hanya peserta yang boleh finish game
+        if (Auth::id() !== $room->host_id && Auth::id() !== $room->challenger_id) {
+            return response()->json(['status' => 'error', 'message' => 'Not a participant'], 403);
+        }
 
         // Hanya proses jika belum finish
         if ($room->status !== 'finished') {
-            $room->update(['status' => 'finished']);
+            $room->status = 'finished';
+            $room->save();
             
             // Tentukan Pemenang
             $winnerId = null;
@@ -197,7 +236,7 @@ class LiveGameController extends Controller
             }
 
             // Update Tabel Challenge jika ini berasal dari challenge
-            Challenge::where('room_code', $request->room_code)
+            Challenge::where('room_code', $room->room_code)
                      ->update([
                          'status' => 'completed',
                          'winner_id' => $winnerId
@@ -213,30 +252,41 @@ class LiveGameController extends Controller
 
     public function sendChallenge(Request $request)
     {
-        $request->validate([
-            'target_id' => 'required|exists:users,id',
-            'category_id' => 'required|exists:categories,id',
-            'total_questions' => 'required',
-            'duration' => 'required'
+        // SECURITY: Validasi input ketat dengan tipe data yang benar
+        $validated = $request->validate([
+            'target_id' => 'required|integer|exists:users,id|different:' . Auth::id(),
+            'category_id' => 'required|integer|exists:categories,id',
+            'total_questions' => 'required|integer|min:3|max:50',
+            'duration' => 'required|integer|min:5|max:120'
         ]);
+
+        // SECURITY: Verifikasi ada cukup soal
+        $count = Question::where('category_id', $validated['category_id'])->count();
+        if ($count < $validated['total_questions']) {
+            return back()->with('error', "Kategori kurang soal (Ada: $count).");
+        }
 
         $roomCode = strtoupper(Str::random(5));
         
-        GameRoom::create([
-            'room_code' => $roomCode,
-            'category_id' => $request->category_id,
-            'host_id' => Auth::id(),
-            'status' => 'waiting',
-            'total_questions' => $request->total_questions,
-            'duration' => $request->duration
-        ]);
+        // SECURITY: Explicit column assignment
+        $room = new GameRoom();
+        $room->room_code = $roomCode;
+        $room->category_id = $validated['category_id'];
+        $room->host_id = Auth::id();
+        $room->status = 'waiting';
+        $room->total_questions = $validated['total_questions'];
+        $room->duration = $validated['duration'];
+        $room->host_score = 0;
+        $room->challenger_score = 0;
+        $room->save();
 
-        $challenge = Challenge::create([
-            'sender_id' => Auth::id(),
-            'target_id' => $request->target_id,
-            'room_code' => $roomCode,
-            'status' => 'pending'
-        ]);
+        // SECURITY: Explicit column assignment untuk Challenge
+        $challenge = new Challenge();
+        $challenge->sender_id = Auth::id();
+        $challenge->target_id = $validated['target_id'];
+        $challenge->room_code = $roomCode;
+        $challenge->status = 'pending';
+        $challenge->save();
 
         try { broadcast(new NewChallengeReceived($challenge)); } catch (\Exception $e) {}
 
@@ -245,12 +295,25 @@ class LiveGameController extends Controller
 
     public function acceptChallenge($id)
     {
-        $challenge = Challenge::where('id', $id)->where('target_id', Auth::id())->firstOrFail();
-        $challenge->update(['status' => 'accepted']);
+        // SECURITY: Validasi ID adalah integer positif
+        if (!is_numeric($id) || $id <= 0) {
+            abort(404);
+        }
+
+        $challenge = Challenge::where('id', (int)$id)
+                              ->where('target_id', Auth::id())
+                              ->where('status', 'pending')
+                              ->firstOrFail();
+        
+        $challenge->status = 'accepted';
+        $challenge->save();
 
         $room = GameRoom::where('room_code', $challenge->room_code)->first();
         if ($room && $room->status == 'waiting') {
-            $room->update(['challenger_id' => Auth::id(), 'status' => 'playing']);
+            $room->challenger_id = Auth::id();
+            $room->status = 'playing';
+            $room->save();
+            
             try { broadcast(new GameUpdated($room)); } catch (\Exception $e) {}
             return redirect()->route('live.play', $room->room_code);
         }
@@ -259,7 +322,16 @@ class LiveGameController extends Controller
 
     public function rejectChallenge($id)
     {
-        Challenge::where('id', $id)->where('target_id', Auth::id())->delete();
+        // SECURITY: Validasi ID adalah integer positif
+        if (!is_numeric($id) || $id <= 0) {
+            abort(404);
+        }
+
+        Challenge::where('id', (int)$id)
+                 ->where('target_id', Auth::id())
+                 ->where('status', 'pending')
+                 ->delete();
+                 
         return back()->with('success', 'Tantangan ditolak.');
     }
 }
