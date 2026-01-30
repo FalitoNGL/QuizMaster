@@ -278,6 +278,71 @@ php artisan test
 | GET | `/api/leaderboard` | Mengambil data skor tertinggi |
 | GET | `/api/achievements` | Mengambil achievement user |
 
+### Contoh Response
+
+**GET /api/categories**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "Jaringan Komputer",
+      "slug": "jaringan-komputer",
+      "questions_count": 50
+    },
+    {
+      "id": 2,
+      "name": "Sistem Operasi",
+      "slug": "sistem-operasi",
+      "questions_count": 35
+    }
+  ]
+}
+```
+
+**GET /api/quiz/1**
+```json
+{
+  "success": true,
+  "category": {
+    "id": 1,
+    "name": "Jaringan Komputer",
+    "slug": "jaringan-komputer"
+  },
+  "total_available": 50,
+  "questions": [
+    {
+      "id": 1,
+      "question_text": "Apa kepanjangan dari OSI?",
+      "type": "single",
+      "options": [
+        {"id": 1, "option_text": "Open System Interconnection"},
+        {"id": 2, "option_text": "Open Source Integration"},
+        {"id": 3, "option_text": "Operating System Interface"},
+        {"id": 4, "option_text": "Online Service Internet"}
+      ]
+    }
+  ]
+}
+```
+
+**GET /api/leaderboard**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "player_name": "John Doe",
+      "score": 950,
+      "category": "Jaringan Komputer",
+      "created_at": "2026-01-30T10:00:00Z"
+    }
+  ]
+}
+```
+
 ---
 
 ## 📜 License
@@ -288,6 +353,4 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 ## 👨‍💻 Author
 **Falito Eriano Nainggolan**
 
----
 
-⭐ Star this repo if you find it useful!
