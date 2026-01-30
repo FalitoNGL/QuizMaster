@@ -86,7 +86,31 @@ Dibangun menggunakan arsitektur **MVC** dengan keamanan tingkat lanjut (Server-S
 
 ---
 
-## 📊 Database Schema (ERD)
+## 📊 UML Diagrams
+
+### 1. Use Case Diagram
+Menggambarkan interaksi antara Aktor (Guest, User, Admin) dengan sistem QuizMaster.
+
+![Use Case Diagram](docs/diagrams/use_case_diagram.png)
+
+### 2. Activity Diagram
+Alur kerja sistem dari Login hingga mendapatkan skor, mencakup mode Single Player dan Live Duel.
+
+![Activity Diagram](docs/diagrams/activity_diagram.png)
+
+### 3. Sequence Diagram
+Detail pertukaran pesan antar komponen saat proses submit jawaban kuis (Server-Side Scoring).
+
+![Sequence Diagram](docs/diagrams/sequence_diagram.png)
+
+### 4. ERD (Entity Relationship Diagram)
+Struktur database relasional dengan 10 tabel yang mendukung fitur gamifikasi dan Live Duel.
+
+![ERD Diagram](docs/diagrams/erd_diagram.png)
+
+---
+
+## 🗄️ Database Schema (ERD)
 
 ### Tabel Utama
 
