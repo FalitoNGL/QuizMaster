@@ -387,15 +387,26 @@ quiz-master-backend/
 
 ## 📸 Screenshots
 
-> Tambahkan screenshot ke folder `docs/screenshots/`
+### Halaman Login
+![Login](docs/screenshots/01_login.png)
 
-| Screen | Path |
-|--------|------|
-| Login | `docs/screenshots/01_login.png` |
-| Menu | `docs/screenshots/02_menu.png` |
-| Quiz | `docs/screenshots/03_quiz.png` |
-| Live Lobby | `docs/screenshots/04_live_lobby.png` |
-| Leaderboard | `docs/screenshots/05_leaderboard.png` |
+### Halaman Menu Kategori
+![Menu](docs/screenshots/02_menu.png)
+
+### Tampilan Pengerjaan Soal
+![Quiz](docs/screenshots/03_quiz.png)
+
+### Live Duel Lobby
+![Live Lobby](docs/screenshots/04_live_lobby.png)
+
+### Leaderboard
+![Leaderboard](docs/screenshots/05_leaderboard.png)
+
+### Achievements
+![Achievements](docs/screenshots/06_achievements.png)
+
+### Admin Dashboard
+![Admin Dashboard](docs/screenshots/07_admin_dashboard.png)
 
 ---
 
