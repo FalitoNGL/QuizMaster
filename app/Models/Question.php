@@ -9,15 +9,14 @@ class Question extends Model
 {
     use HasFactory;
 
-    // Tambahkan 'explanation' dan 'reference' ke dalam fillable
     protected $fillable = [
         'category_id', 
         'type', 
         'question_text', 
         'image_path', 
         'audio_path',
-        'explanation', // <-- BARU
-        'reference'    // <-- BARU
+        'explanation',
+        'reference'
     ];
 
     public function options()

@@ -9,7 +9,6 @@ class GameRoom extends Model
 {
     use HasFactory;
     
-    // Tambahkan 'total_questions' dan 'duration' ke fillable
     protected $fillable = [
         'room_code', 
         'category_id', 
