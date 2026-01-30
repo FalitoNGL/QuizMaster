@@ -1,422 +1,293 @@
-# 🚀 QuizMaster - Real-Time Multiplayer Quiz Platform
+# 📚 Dokumentasi Project (Progress Report)
 
-![Laravel](https://img.shields.io/badge/Laravel_11-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS_4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
-![MySQL](https://img.shields.io/badge/MySQL-005C84?style=for-the-badge&logo=mysql&logoColor=white)
-![PHP](https://img.shields.io/badge/PHP_8.2+-777BB4?style=for-the-badge&logo=php&logoColor=white)
-![Google](https://img.shields.io/badge/Google_OAuth-4285F4?style=for-the-badge&logo=google&logoColor=white)
-![WebSocket](https://img.shields.io/badge/WebSocket-010101?style=for-the-badge&logo=socket.io&logoColor=white)
-
-## 📌 Project Overview
-
-**QuizMaster** adalah platform kuis interaktif berbasis web yang dirancang untuk kebutuhan evaluasi akademik maupun hiburan. Aplikasi ini mendukung fitur **Real-Time Multiplayer** (Live Duel), sistem **Gamifikasi** (Achievement & Leaderboard), fitur **Sosial** (Follow & Profile), serta manajemen soal yang komprehensif.
-
-Dibangun menggunakan arsitektur **MVC** dengan keamanan tingkat lanjut (Server-Side Scoring) untuk mencegah kecurangan dalam penilaian.
+## QuizMaster - Platform Kuis Interaktif Real-Time
+![Laravel](https://img.shields.io/badge/Laravel-11-red?logo=laravel)
+![PHP](https://img.shields.io/badge/PHP-8.2+-blue?logo=php)
+![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.x-38B2AC?logo=tailwindcss)
+![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql&logoColor=white)
+![WebSocket](https://img.shields.io/badge/WebSocket-Reverb-010101?logo=socket.io)
+![Google](https://img.shields.io/badge/OAuth-Google-4285F4?logo=google)
 
 ---
 
-## 📑 SRS (Software Requirements Specification)
+## 📖 Deskripsi
+QuizMaster adalah platform kuis interaktif berbasis web yang dirancang untuk evaluasi akademik dan hiburan. Aplikasi ini mendukung **Live Duel** (kompetisi real-time antar pengguna), sistem **Gamifikasi** (Achievement & Leaderboard), fitur **Sosial** (Follow & Profile), serta manajemen soal yang komprehensif.
 
-### 1. Functional Requirements
+### Tujuan Utama:
+- Menyediakan platform pembelajaran interaktif dengan fitur multiplayer
+- Meningkatkan motivasi belajar melalui gamifikasi (Achievements, Leaderboard)
+- Mendukung berbagai tipe soal (Single, Multiple, Ordering, Matching)
+- Memungkinkan kompetisi real-time antar pengguna (Live Duel)
+- Memudahkan admin dalam mengelola bank soal dan import data
 
-| Modul | Deskripsi |
-|-------|-----------|
-| **Autentikasi** | Login via Google OAuth (Laravel Socialite), session management |
-| **Manajemen Kuis** | CRUD Kategori, Soal multi-tipe (Single, Multiple, Ordering, Matching), Import JSON |
-| **Mode Single Player** | Pengerjaan kuis mandiri dengan timer dan feedback instan |
-| **Mode Live Duel** | Kompetisi real-time via WebSocket (Laravel Reverb) dalam Game Room |
-| **Challenge System** | Tantangan langsung antar user dengan notifikasi real-time |
-| **Sistem Penilaian** | Perhitungan skor 100% di server (Anti-Cheat) dengan bonus waktu |
-| **Gamifikasi** | Achievement badges (Newbie, Veteran, Sharpshooter, Speedster) |
-| **Fitur Sosial** | Profil publik, sistem follow/following, Social Hub |
-| **Statistics** | Riwayat pengerjaan, statistik performa, review jawaban |
-
-### 2. Non-Functional Requirements
-
-- **Security:** Input validation ketat, CSRF Protection, Server-Side Scoring, Participant Verification
-- **Performance:** Real-time scoring via WebSocket, optimized database queries
-- **Reliability:** Multiple concurrent users support dalam Live Duel
-- **Interoperability:** REST API untuk integrasi aplikasi Mobile
+### Tech Stack:
+- **Backend:** Laravel 11
+- **Frontend:** Blade Templates + Alpine.js
+- **Styling:** TailwindCSS 4
+- **Database:** MySQL 8.0
+- **Real-time:** Laravel Reverb (WebSocket)
+- **Auth:** Google OAuth (Laravel Socialite)
+- **Build:** Vite
 
 ---
 
-## 🛠 Feature List
+## 📋 User Story
 
-### 👤 User Features
+| ID | User Story | Priority |
+|----|------------|----------|
+| US-01 | Sebagai user, saya ingin login dengan Google agar lebih praktis | High |
+| US-02 | Sebagai user, saya ingin mengerjakan kuis dengan timer dan feedback instan | High |
+| US-03 | Sebagai user, saya ingin bertanding live dengan teman dalam Game Room | High |
+| US-04 | Sebagai user, saya ingin mengirim tantangan langsung ke user lain | Medium |
+| US-05 | Sebagai user, saya ingin melihat leaderboard untuk memotivasi diri | Medium |
+| US-06 | Sebagai user, saya ingin mendapatkan achievement badges saat mencapai target | Medium |
+| US-07 | Sebagai user, saya ingin follow user lain dan melihat profil mereka | Low |
+| US-08 | Sebagai admin, saya ingin import soal dari JSON agar efisien | High |
+| US-09 | Sebagai admin, saya ingin CRUD kategori dan soal dengan mudah | High |
+| US-10 | Sebagai admin, saya ingin melihat statistik pengerjaan kuis | Medium |
 
-| Fitur | Route | Deskripsi |
-|-------|-------|-----------|
-| **Menu Kategori** | `/` | Pilih kategori kuis yang tersedia |
-| **Play Quiz** | `/quiz/{slug}` | Kerjakan soal dengan timer dan feedback instan |
-| **Review Jawaban** | `/review/{id}` | Lihat pembahasan dan jawaban benar |
-| **Leaderboard** | `/leaderboard` | Peringkat skor tertinggi global |
-| **Achievements** | `/achievements` | Koleksi badges yang telah diraih |
-| **Statistics** | `/stats` | Statistik performa pribadi |
-| **Settings** | `/settings` | Reset riwayat dan preferensi |
+---
 
-### 🎮 Live Duel Features
+## 📝 SRS - Feature List
 
-| Fitur | Route | Deskripsi |
-|-------|-------|-----------|
-| **Game Lobby** | `/live` | Buat atau join room untuk Live Duel |
-| **Create Room** | `POST /live/create` | Buat room dengan kategori dan durasi custom |
-| **Join Room** | `POST /live/join` | Bergabung dengan kode room 5 karakter |
-| **Live Gameplay** | `/live/{roomCode}` | Bermain real-time dengan lawan |
-| **Send Challenge** | `POST /live/challenge/send` | Tantang user lain secara langsung |
-| **Accept/Reject** | `/live/challenge/accept/{id}` | Terima atau tolak tantangan |
+### Functional Requirements
+| ID | Feature | Deskripsi | Status |
+|----|---------|-----------|--------|
+| FR-01 | Google OAuth | Login dengan akun Google via Socialite | ✅ Done |
+| FR-02 | Single Player Quiz | Mode latihan dengan feedback per soal | ✅ Done |
+| FR-03 | Live Duel | Mode kompetisi real-time via WebSocket | ✅ Done |
+| FR-04 | Challenge System | Tantangan langsung antar user dengan notifikasi | ✅ Done |
+| FR-05 | Question Types | Single, Multiple, Ordering, Matching | ✅ Done |
+| FR-06 | Leaderboard | Ranking berdasarkan skor tertinggi | ✅ Done |
+| FR-07 | Gamification | Achievement badges (Newbie, Veteran, dll) | ✅ Done |
+| FR-08 | Social Features | Follow user, profil publik, Social Hub | ✅ Done |
+| FR-09 | Review Mode | Lihat pembahasan dan jawaban benar | ✅ Done |
+| FR-10 | Admin CRUD | Kelola Kategori, Soal, Opsi | ✅ Done |
+| FR-11 | JSON Import | Import soal massal dari file JSON | ✅ Done |
+| FR-12 | REST API | Endpoint untuk integrasi mobile | ✅ Done |
 
-### 👥 Social Features
-
-| Fitur | Route | Deskripsi |
-|-------|-------|-----------|
-| **Social Hub** | `/social` | Pusat aktivitas sosial (wajib login) |
-| **Public Profile** | `/profile/{id}` | Lihat profil user lain |
-| **Edit Profile** | `/profile/edit/me` | Edit profil pribadi |
-| **Follow User** | `POST /follow/{id}` | Follow/unfollow user lain |
-
-### 🛡️ Admin Features
-
-| Fitur | Route | Deskripsi |
-|-------|-------|-----------|
-| **Dashboard** | `/admin` | Ringkasan statistik dan aktivitas |
-| **CRUD Soal** | `/admin/create`, `/admin/edit/{id}` | Tambah, edit, hapus soal |
-| **Import JSON** | `/admin/import` | Import soal massal dari file JSON |
-| **Manage Categories** | `/admin/categories` | CRUD kategori kuis |
-| **Cleanup** | `/admin/cleanup` | Bersihkan data sampah |
+### Non-Functional Requirements
+| ID | Requirement | Deskripsi |
+|----|-------------|-----------|
+| NFR-01 | Security | Server-side scoring, input validation, CSRF protection |
+| NFR-02 | Performance | Real-time scoring via WebSocket, optimized queries |
+| NFR-03 | Reliability | Multiple concurrent users dalam Live Duel |
+| NFR-04 | Usability | Responsive design, UX intuitif |
+| NFR-05 | Interoperability | REST API untuk integrasi dengan aplikasi Mobile |
 
 ---
 
 ## 📊 UML Diagrams
 
-### 1. Use Case Diagram
-Menggambarkan interaksi antara Aktor (Guest, User, Admin) dengan sistem QuizMaster.
-
+### Use Case Diagram
 ![Use Case Diagram](docs/diagrams/use_case_diagram.png)
 
-### 2. Activity Diagram
-Alur kerja sistem dari Login hingga mendapatkan skor, mencakup mode Single Player dan Live Duel.
-
+### Activity Diagram - Quiz Flow
 ![Activity Diagram](docs/diagrams/activity_diagram.png)
 
-### 3. Sequence Diagram
-Detail pertukaran pesan antar komponen saat proses submit jawaban kuis (Server-Side Scoring).
-
+### Sequence Diagram - Submit Answer
 ![Sequence Diagram](docs/diagrams/sequence_diagram.png)
 
-### 4. ERD (Entity Relationship Diagram)
-Struktur database relasional dengan 10 tabel yang mendukung fitur gamifikasi dan Live Duel.
-
+### ERD (Entity Relationship Diagram)
 ![ERD Diagram](docs/diagrams/erd_diagram.png)
 
 ---
 
-## 🗄️ Database Schema (ERD)
+## 🎨 Mock-Up / Screenshots
 
-### Tabel Utama
+### 1. Halaman Login
+![Login Page](docs/screenshots/01_login.png)
 
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   users     │     │  categories │     │  questions  │
-├─────────────┤     ├─────────────┤     ├─────────────┤
-│ id          │     │ id          │     │ id          │
-│ name        │     │ name        │     │ category_id │◄──┐
-│ email       │     │ slug        │     │ type        │   │
-│ google_id   │     │ description │     │ question_text│  │
-│ avatar      │     │ icon_class  │     │ explanation │   │
-│ bio         │     └─────────────┘     │ image_path  │   │
-│ xp          │            │            │ audio_path  │   │
-└─────────────┘            │            └─────────────┘   │
-      │                    │                   │          │
-      │              ┌─────┴─────┐             │          │
-      │              │           │             │          │
-      ▼              ▼           ▼             ▼          │
-┌─────────────┐ ┌─────────────┐ ┌─────────────┐           │
-│  results    │ │  options    │ │result_answers│          │
-├─────────────┤ ├─────────────┤ ├─────────────┤           │
-│ id          │ │ id          │ │ id          │           │
-│ user_id     │ │ question_id │ │ result_id   │           │
-│ category_id │─┘ │ option_text │ │ question_id │          │
-│ score       │   │ is_correct  │ │ option_id   │          │
-│ correct_ans │   │ matching_pair│ │ is_correct │          │
-│ total_ques  │   │ correct_order│ └─────────────┘         │
-└─────────────┘   └─────────────┘                         │
-                                                          │
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐   │
-│ game_rooms  │     │ challenges  │     │achievements │   │
-├─────────────┤     ├─────────────┤     ├─────────────┤   │
-│ id          │     │ id          │     │ id          │   │
-│ room_code   │◄────│ room_code   │     │ name        │   │
-│ category_id │─────┼─────────────┼─────│ slug        │   │
-│ host_id     │     │ sender_id   │     │ description │   │
-│ challenger_id│    │ target_id   │     │ icon        │   │
-│ host_score  │     │ status      │     └─────────────┘   │
-│ challenger_ │     │ winner_id   │            │          │
-│ status      │     └─────────────┘            │          │
-│ duration    │                          ┌─────┴─────┐    │
-│ total_ques  │                          │           │    │
-└─────────────┘                          ▼           │    │
-                               ┌─────────────────┐   │    │
-                               │player_achievements│  │   │
-                               ├─────────────────┤   │    │
-                               │ user_id         │   │    │
-                               │ player_name     │   │    │
-                               │ achievement_id  │◄──┘    │
-                               └─────────────────┘        │
-```
+### 2. Halaman Menu Kategori
+![Menu Page](docs/screenshots/02_menu.png)
 
-### Tipe Soal yang Didukung
+### 3. Tampilan Pengerjaan Soal
+![Quiz Page](docs/screenshots/03_quiz.png)
 
-| Type | Deskripsi |
-|------|-----------|
-| `single` | Pilihan ganda (1 jawaban benar) |
-| `multiple` | Pilihan ganda (>1 jawaban benar) |
-| `ordering` | Urutkan opsi sesuai urutan benar |
-| `matching` | Pasangkan opsi kiri dengan kanan |
+### 4. Live Duel Lobby
+![Live Lobby](docs/screenshots/04_live_lobby.png)
+
+### 5. Leaderboard
+![Leaderboard](docs/screenshots/05_leaderboard.png)
+
+### 6. Achievements
+![Achievements](docs/screenshots/06_achievements.png)
+
+### 7. Admin Dashboard
+![Admin Dashboard](docs/screenshots/07_admin_dashboard.png)
 
 ---
 
-## 🔄 SDLC (System Development Life Cycle)
+## 🔄 SDLC (Software Development Life Cycle)
 
-Pengembangan **QuizMaster** mengikuti model **Waterfall**:
+**Metodologi:** Waterfall dengan iterasi
 
+| Phase | Aktivitas | Output |
+|-------|-----------|--------|
+| **1. Planning** | Requirement gathering, user story | PRD, User Stories |
+| **2. Analysis** | SRS, feature prioritization | Feature List, SRS Doc |
+| **3. Design** | UML diagrams, database design, mockups | UML, ERD, Mockups |
+| **4. Development** | Coding, unit testing | Source code, tests |
+| **5. Testing** | Feature testing, security audit | Test cases (16 tests) |
+| **6. Deployment** | Server setup, deployment | Live application |
+| **7. Maintenance** | Bug fixes, feature updates | Patches, updates |
+
+### Timeline
 ```
-┌──────────────────┐
-│ 1. REQUIREMENT   │ → Analisis kebutuhan Live Game, Anti-Cheat, Gamifikasi
-└────────┬─────────┘
-         ▼
-┌──────────────────┐
-│ 2. SYSTEM DESIGN │ → Rancang ERD, UI/UX, API Specification
-└────────┬─────────┘
-         ▼
-┌──────────────────┐
-│ 3. IMPLEMENTATION│ → Laravel 11 + Tailwind CSS + MySQL + Reverb
-└────────┬─────────┘
-         ▼
-┌──────────────────┐
-│ 4. TESTING       │ → PHPUnit (16 tests, 48 assertions) + Black Box
-└────────┬─────────┘
-         ▼
-┌──────────────────┐
-│ 5. DEPLOYMENT    │ → Server configuration, SSL, optimization
-└────────┬─────────┘
-         ▼
-┌──────────────────┐
-│ 6. MAINTENANCE   │ → Bug fixes, feature updates, monitoring
-└──────────────────┘
+Minggu 1: Planning & Analysis
+Minggu 2: Design (UML, ERD, Mockups)
+Minggu 3-4: Development Sprint 1 (Core Features: Quiz, Auth)
+Minggu 5-6: Development Sprint 2 (Live Duel, Social Features)
+Minggu 7: Development Sprint 3 (Admin Features, API)
+Minggu 8: Testing, Security Audit & Deployment
 ```
 
 ---
 
-## 💻 Tech Stack
+## 🚀 Instalasi
 
-### Backend
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| PHP | 8.2+ | Server-side language |
-| Laravel | 11.x | MVC Framework |
-| MySQL | 8.0 | Relational Database |
-| Laravel Reverb | 1.x | WebSocket for Real-time |
-| Laravel Socialite | 5.x | Google OAuth |
-| Maatwebsite Excel | 3.x | Excel Export/Import |
+### Prerequisites
+Pastikan Anda sudah menginstall:
+- **PHP** >= 8.2
+- **Composer** >= 2.0
+- **Node.js** >= 18.0
+- **NPM** >= 9.0
+- **MySQL** >= 8.0
+- **Git**
 
-### Frontend
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| Blade Templates | - | Server-side rendering |
-| Tailwind CSS | 4.x | Utility-first CSS |
-| Vite | 7.x | Build tool |
-| Alpine.js | - | Lightweight reactivity |
-| Pusher JS | 8.x | WebSocket client |
-| Laravel Echo | 2.x | Real-time events |
+### Langkah 1: Clone Repository
+```bash
+git clone https://github.com/FalitoNGL/QuizMaster.git
+cd QuizMaster/quiz-master-backend
+```
+
+### Langkah 2: Install Dependencies
+```bash
+# Install PHP dependencies
+composer install
+
+# Install Node.js dependencies
+npm install
+```
+
+### Langkah 3: Konfigurasi Environment
+```bash
+# Copy file environment
+cp .env.example .env
+
+# Generate application key
+php artisan key:generate
+```
+
+**Edit file `.env`** dan sesuaikan konfigurasi database:
+
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=quizmaster
+DB_USERNAME=root
+DB_PASSWORD=
+
+# Google OAuth (opsional)
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
+```
+
+### Langkah 4: Setup Database
+```bash
+# Jalankan migrasi dan seeder
+php artisan migrate --seed
+
+# Link storage untuk upload file
+php artisan storage:link
+```
+
+### Langkah 5: Build Assets
+```bash
+# Build untuk production
+npm run build
+
+# atau untuk development (dengan hot reload)
+npm run dev
+```
+
+### Langkah 6: Jalankan Server
+```bash
+php artisan serve
+```
+
+Aplikasi akan berjalan di: **http://localhost:8000**
+
+### 🔐 Default Account
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | Akses via `/admin/login` | password123 |
+| User | Login via Google OAuth | - |
+
+### ⚠️ Troubleshooting
+| Error | Solusi |
+|-------|--------|
+| `SQLSTATE: no such table` | Jalankan `php artisan migrate:fresh --seed` |
+| `Vite manifest not found` | Jalankan `npm run build` |
+| `Permission denied` | Jalankan `chmod -R 775 storage bootstrap/cache` |
+| `Class not found` | Jalankan `composer dump-autoload` |
+
+---
+
+## 📁 Struktur Database
+```
+users              → User accounts (Google OAuth, avatar, bio, xp)
+categories         → Kategori kuis (name, slug, description)
+questions          → Bank soal (4 tipe: single/multiple/ordering/matching)
+options            → Opsi jawaban dengan is_correct flag
+results            → Hasil pengerjaan kuis
+result_answers     → Detail jawaban per soal
+game_rooms         → Room untuk Live Duel
+challenges         → Tantangan antar user
+achievements       → Definisi achievement badges
+player_achievements → Achievement yang diraih user
+```
 
 ---
 
 ## 🧪 Testing
 
-### Menjalankan Test
-
+Jalankan semua test:
 ```bash
 php artisan test
 ```
 
 ### Test Coverage (16 Tests, 48 Assertions)
-
 | Category | Tests |
 |----------|-------|
-| **User Flow** | Login → Menu → Quiz → Score |
-| **API Endpoints** | `/api/categories`, `/api/quiz/{id}`, `/api/leaderboard`, `/api/achievements` |
-| **Security** | Auth required for Live, Social, Admin routes |
-| **Input Validation** | Invalid data rejection, parameter bounds |
+| User Flow | Login → Menu → Quiz → Score |
+| API Endpoints | `/api/categories`, `/api/quiz/{id}`, `/api/leaderboard` |
+| Security | Auth required for Live, Social, Admin routes |
+| Validation | Invalid data rejection, parameter bounds |
 
 ---
 
 ## 📡 REST API Endpoints
 
-Base URL: `http://localhost:8000/api`
-
-| Method | Endpoint | Params | Response |
-|--------|----------|--------|----------|
-| GET | `/categories` | - | Semua kategori + questions_count |
-| GET | `/quiz/{id}` | `?limit=10` | Soal acak (jawaban disembunyikan) |
-| GET | `/leaderboard` | `?limit=20` | Top skor |
-| GET | `/achievements` | `?user_id=X` | Achievement user |
-
-### Contoh Response
-
-```json
-// GET /api/categories
-{
-  "success": true,
-  "data": [
-    {
-      "id": 1,
-      "name": "Jaringan Komputer",
-      "slug": "jaringan-komputer",
-      "questions_count": 50
-    }
-  ]
-}
-```
+| Method | Endpoint | Deskripsi |
+|--------|----------|-----------|
+| GET | `/api/categories` | Mengambil semua kategori |
+| GET | `/api/quiz/{id}` | Mengambil soal berdasarkan kategori |
+| GET | `/api/leaderboard` | Mengambil data skor tertinggi |
+| GET | `/api/achievements` | Mengambil achievement user |
 
 ---
 
-## 🚀 Installation
-
-### Requirements
-- PHP 8.2+
-- Composer
-- Node.js 18+
-- MySQL 8.0
-- Git
-
-### Step-by-Step
-
-```bash
-# 1. Clone repository
-git clone https://github.com/FalitoNGL/QuizMaster.git
-cd QuizMaster/quiz-master-backend
-
-# 2. Install PHP dependencies
-composer install
-
-# 3. Install JS dependencies & build
-npm install
-npm run build
-
-# 4. Setup environment
-cp .env.example .env
-php artisan key:generate
-
-# 5. Configure database in .env
-# DB_DATABASE=quizmaster
-# DB_USERNAME=root
-# DB_PASSWORD=
-
-# 6. Run migrations & seeders
-php artisan migrate:fresh --seed
-
-# 7. Start development server
-php artisan serve
-
-# 8. (Optional) Start all services
-composer dev
-```
-
-### Development Mode (All Services)
-
-```bash
-composer dev
-# Runs: Laravel Server + Queue + Logs + Vite concurrently
-```
+## 📜 License
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## 🔐 Security Features
-
-| Feature | Implementation |
-|---------|----------------|
-| **Server-Side Scoring** | Skor dihitung 100% di server, client hanya kirim jawaban |
-| **Input Validation** | Semua input divalidasi dengan rules ketat (tipe, range, regex) |
-| **Anti Mass Assignment** | Explicit column assignment, tidak pakai `$request->all()` |
-| **Participant Verification** | Verifikasi user adalah peserta sebelum aksi game |
-| **CSRF Protection** | Token CSRF di semua form POST |
-| **Route Protection** | Middleware `auth` untuk fitur yang memerlukan login |
+## 👨‍💻 Author
+**Falito Eriano Nainggolan**
 
 ---
 
-## 📁 Project Structure
-
-```
-quiz-master-backend/
-├── app/
-│   ├── Http/Controllers/
-│   │   ├── Api/
-│   │   │   └── ApiController.php      # REST API
-│   │   ├── AdminController.php        # Admin CRUD
-│   │   ├── AuthController.php         # Google OAuth
-│   │   ├── LiveGameController.php     # Live Duel
-│   │   ├── ProfileController.php      # Social Features
-│   │   ├── QuizController.php         # Quiz Logic
-│   │   └── ...
-│   ├── Events/
-│   │   ├── GameUpdated.php            # WebSocket event
-│   │   └── NewChallengeReceived.php
-│   └── Models/
-│       ├── Category.php
-│       ├── Question.php
-│       ├── Option.php
-│       ├── Result.php
-│       ├── GameRoom.php
-│       ├── Challenge.php
-│       ├── Achievement.php
-│       └── User.php
-├── database/
-│   ├── migrations/                    # Schema definitions
-│   └── seeders/                       # Sample data
-├── routes/
-│   ├── web.php                        # Web routes
-│   └── api.php                        # API routes
-├── tests/
-│   └── Feature/
-│       └── ComplexQuizTest.php        # 14 test cases
-└── resources/
-    └── views/                         # Blade templates
-```
-
----
-
-## 📸 Screenshots
-
-### Halaman Login
-![Login](docs/screenshots/01_login.png)
-
-### Halaman Menu Kategori
-![Menu](docs/screenshots/02_menu.png)
-
-### Tampilan Pengerjaan Soal
-![Quiz](docs/screenshots/03_quiz.png)
-
-### Live Duel Lobby
-![Live Lobby](docs/screenshots/04_live_lobby.png)
-
-### Leaderboard
-![Leaderboard](docs/screenshots/05_leaderboard.png)
-
-### Achievements
-![Achievements](docs/screenshots/06_achievements.png)
-
-### Admin Dashboard
-![Admin Dashboard](docs/screenshots/07_admin_dashboard.png)
-
----
-
-## 📄 License
-
-MIT License - Free to use and modify.
-
----
-
-<p align="center">
-Created with ❤️ by <b>FalitoNGL</b> for Final Project<br>
-Laravel 11 • Tailwind CSS 4 • MySQL • WebSocket
-</p>
+⭐ Star this repo if you find it useful!
