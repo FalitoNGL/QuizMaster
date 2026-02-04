@@ -1,5 +1,7 @@
 {{-- Global Navbar Component --}}
-<nav id="navbar" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+{{-- Pass $navbarHidden = true to hide navbar initially (for menu page) --}}
+@php $isHiddenByDefault = isset($navbarHidden) && $navbarHidden; @endphp
+<nav id="navbar" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 {{ $isHiddenByDefault ? '-translate-y-full opacity-0' : '' }}" data-hidden-default="{{ $isHiddenByDefault ? 'true' : 'false' }}">
     <div class="glass border-b border-gray-200 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl">
         <div class="container mx-auto px-4">
             <div class="flex items-center justify-between h-16">
@@ -183,13 +185,30 @@
         }
     }
 
-    // Navbar scroll effect
+    // Navbar scroll effect + Smart show/hide for menu page
     window.addEventListener('scroll', () => {
         const navbar = document.getElementById('navbar');
+        const isHiddenDefault = navbar.dataset.hiddenDefault === 'true';
+        
         if (window.scrollY > 20) {
             navbar.classList.add('navbar-scrolled');
         } else {
             navbar.classList.remove('navbar-scrolled');
+        }
+        
+        // Smart show/hide for pages with hidden navbar by default
+        if (isHiddenDefault) {
+            const quickLinks = document.getElementById('quick-links');
+            if (quickLinks) {
+                const rect = quickLinks.getBoundingClientRect();
+                const isOutOfView = rect.bottom < 0;
+                
+                if (isOutOfView) {
+                    navbar.classList.remove('-translate-y-full', 'opacity-0');
+                } else {
+                    navbar.classList.add('-translate-y-full', 'opacity-0');
+                }
+            }
         }
     });
 </script>
