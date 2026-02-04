@@ -36,6 +36,10 @@
                             <i class="fas fa-medal"></i>
                             <span>Pencapaian</span>
                         </a>
+                        <a href="{{ route('stats') }}" class="nav-item {{ request()->routeIs('stats') ? 'nav-item-active' : '' }}">
+                            <i class="fas fa-chart-pie"></i>
+                            <span>Statistik</span>
+                        </a>
                         @auth
                         <a href="{{ route('social.index') }}" class="nav-item {{ request()->routeIs('social.*') ? 'nav-item-active' : '' }}">
                             <i class="fas fa-users"></i>
