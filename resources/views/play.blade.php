@@ -98,6 +98,31 @@
         /* Badge Anim */
         .badge-pop { animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+        /* --- 4. NEW FEATURES (Streak, Transitions) --- */
+        /* Streak Badge */
+        .streak-container {
+            position: absolute; top: 0px; left: 50%; transform: translateX(-50%) scale(0.8);
+            background: linear-gradient(135deg, #f59e0b, #ea580c);
+            padding: 6px 18px; border-radius: 30px;
+            font-weight: 900; font-size: 1rem; color: white;
+            box-shadow: 0 0 20px rgba(249, 115, 22, 0.6); border: 2px solid #fbbf24;
+            z-index: 50; opacity: 0; pointer-events: none;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .streak-visible { top: -20px; opacity: 1; transform: translateX(-50%) scale(1.1) rotate(-2deg); }
+        .streak-pop { animation: streakPop 0.3s; }
+        @keyframes streakPop { 50% { transform: translateX(-50%) scale(1.4) rotate(5deg); } }
+
+        /* Smooth Slide Transitions */
+        .slide-container { position: relative; min-height: 400px; } /* Ensure height for absolute positioning if needed, or stick to flow */
+        
+        .transition-enter { opacity: 0; transform: translateX(60px); }
+        .transition-enter-active { opacity: 1; transform: translateX(0); transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+        
+        .transition-exit { opacity: 1; transform: translateX(0); }
+        .transition-exit-active { opacity: 0; transform: translateX(-60px); pointer-events: none; position: absolute; width: 100%; top: 0; transition: all 0.4s ease-in; }
     </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex items-center justify-center font-sans p-4">
@@ -132,7 +157,11 @@
             </div>
         </div>
 
-        <div id="quiz-card" class="glass rounded-3xl p-6 md:p-8 relative overflow-hidden">
+        <div id="quiz-card" class="glass rounded-3xl p-6 md:p-8 relative overflow-visible transition-all duration-500">
+            <!-- Streak Badge -->
+            <div id="streak-badge" class="streak-container">
+                <i class="fas fa-fire-alt animate-pulse mr-1 text-yellow-200"></i> COMBO x<span id="streak-count">0</span>
+            </div>
             
             <div class="mb-8">
                 <div class="flex justify-between items-end mb-1 px-1">
@@ -153,9 +182,10 @@
                 </div>
             </div>
 
-            <div id="question-content" class="hidden opacity-0 transform translate-y-4 transition-all duration-500">
-                <div class="mb-6">
-                    <div id="media-container" class="hidden mb-4 rounded-xl overflow-hidden border border-slate-600 shadow-lg">
+            <div id="question-wrapper" class="relative">
+                <div id="question-content" class="transition-enter opacity-0">
+                    <div class="mb-6">
+                        <div id="media-container" class="hidden mb-4 rounded-xl overflow-hidden border border-slate-600 shadow-lg">
                         <img id="q-image" class="w-full h-56 object-cover hidden">
                         <audio id="q-audio" controls class="w-full hidden bg-slate-800"></audio>
                     </div>
@@ -183,7 +213,8 @@
                         Lanjut Soal Berikutnya <i class="fas fa-arrow-right transform group-hover:translate-x-1 transition"></i>
                     </button>
                 </div>
-            </div>
+                </div> <!-- End of question-content -->
+            </div> <!-- End of question-wrapper -->
         </div>
 
         <div id="result-card" class="hidden glass rounded-3xl p-8 text-center shadow-2xl bg-slate-800 border border-slate-700 relative z-20">
@@ -289,6 +320,12 @@
         // Penampung Jawaban User
         let userAnswers = []; 
         let estimatedCorrect = 0; 
+        
+        // --- Feature Variables ---
+        let streakCount = 0;
+        let maxStreak = 0;
+        const streakEl = document.getElementById('streak-badge');
+        const streakCountEl = document.getElementById('streak-count'); 
 
         const sfxCorrect = document.getElementById('sfx-correct');
         const sfxWrong = document.getElementById('sfx-wrong');
@@ -323,6 +360,36 @@
                 }
             };
             window.requestAnimationFrame(step);
+        }
+
+        // --- NEW: Haptic Feedback ---
+        function triggerHaptic(type) {
+            if (!navigator.vibrate) return;
+            if (type === 'success') navigator.vibrate([15, 30, 15]); // Quick double tap
+            if (type === 'error') navigator.vibrate([50, 50, 50]); // Longer buzz
+            if (type === 'tap') navigator.vibrate(10); // Light tap
+        }
+
+        // --- NEW: Streak Logic ---
+        function updateStreak(isCorrect) {
+            if (isCorrect) {
+                streakCount++;
+                if(streakCount > maxStreak) maxStreak = streakCount;
+                streakCountEl.innerText = streakCount;
+                
+                if (streakCount >= 2) {
+                    streakEl.classList.add('streak-visible');
+                    streakEl.classList.remove('streak-pop');
+                    void streakEl.offsetWidth; // trigger reflow
+                    streakEl.classList.add('streak-pop');
+                    
+                    // Extra confetti for big streaks
+                    if(streakCount % 3 === 0) confetti({ particleCount: 30, spread: 40, origin: { y: 0.5 }, colors: ['#f59e0b', '#ef4444'] });
+                }
+            } else {
+                streakEl.classList.remove('streak-visible');
+                streakCount = 0;
+            }
         }
 
         // Logic Segmented Bar
@@ -367,12 +434,21 @@
             isAnswered = false;
             
             // UI Resets
+            const wrapper = document.getElementById('question-wrapper');
             const contentDiv = document.getElementById('question-content');
+            
+            // Remove exit classes if exist from previous
+            contentDiv.classList.remove('transition-exit', 'transition-exit-active');
+            
+            // Add enter classes
             document.getElementById('skeleton-loader').classList.add('hidden');
-            contentDiv.classList.remove('hidden');
-            void contentDiv.offsetWidth; 
-            contentDiv.classList.add('fade-enter-active');
-            contentDiv.classList.remove('opacity-0', 'translate-y-4');
+            contentDiv.classList.remove('hidden', 'opacity-0');
+            contentDiv.classList.add('transition-enter-active');
+            
+            // Reset position after animation (timeout matching CSS)
+            setTimeout(() => {
+                contentDiv.classList.remove('transition-enter', 'transition-enter-active');
+            }, 500);
 
             // Gunakan textContent untuk soal juga
             document.getElementById('question-text').textContent = q.question_text;
@@ -585,6 +661,10 @@
                 });
             }
             
+            // Update Streak & Haptic
+            updateStreak(isCorrect);
+            triggerHaptic(isCorrect ? 'success' : 'error');
+            
             animateValue(document.getElementById("score-display"), oldScore, estimatedScore, 600);
             userAnswers.push({ question_id: questions[currentIdx].id, answer: opt.id, time_left: timeLeft });
             finishTurn();
@@ -639,6 +719,11 @@
             } else { 
                 playSound(sfxWrong); 
             }
+            
+            // Update Streak & Haptic
+            updateStreak(isCorrect);
+            triggerHaptic(isCorrect ? 'success' : 'error');
+            
             animateValue(document.getElementById("score-display"), oldScore, estimatedScore, 600);
 
             userAnswers.push({ 
@@ -663,7 +748,7 @@
         }
 
         function handleTimeUp() {
-            isAnswered = true; playSound(sfxWrong);
+            isAnswered = true; playSound(sfxWrong); triggerHaptic('error'); updateStreak(false);
             document.getElementById('options-container').classList.add('disabled-opt');
             document.getElementById('btn-confirm').classList.add('hidden');
             
@@ -682,9 +767,18 @@
 
         function nextQuestion() { 
             const contentDiv = document.getElementById('question-content');
-            contentDiv.classList.add('opacity-0', 'translate-y-4'); 
-            contentDiv.classList.remove('fade-enter-active');
-            setTimeout(() => { currentIdx++; loadQuestion(); }, 300); 
+            
+            // Start Exit Animation
+            contentDiv.classList.add('transition-exit');
+            void contentDiv.offsetWidth; // Force reflow
+            contentDiv.classList.add('transition-exit-active');
+
+            // Wait for anim then load next
+            setTimeout(() => { 
+                currentIdx++; 
+                contentDiv.classList.add('hidden'); // Hide momentarily
+                loadQuestion(); 
+            }, 350); 
         }
 
         function finishQuiz() {
