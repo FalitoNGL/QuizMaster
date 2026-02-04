@@ -87,8 +87,8 @@
                     </a>
                     @endauth
 
-                    {{-- Mobile Menu Button --}}
-                    <button onclick="toggleMobileMenu()" class="md:hidden action-btn ml-1">
+                    {{-- Mobile Menu Button - Only visible on mobile --}}
+                    <button onclick="toggleMobileMenu()" class="mobile-menu-btn">
                         <i id="mobile-menu-icon" class="fas fa-bars"></i>
                     </button>
                 </div>
@@ -223,6 +223,28 @@
     .action-btn:hover {
         color: white;
         background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Mobile menu button - hidden on desktop */
+    .mobile-menu-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: rgba(255, 255, 255, 0.7);
+        transition: all 0.3s ease;
+        margin-left: 4px;
+    }
+    .mobile-menu-btn:hover {
+        color: white;
+        background: rgba(255, 255, 255, 0.1);
+    }
+    @media (min-width: 768px) {
+        .mobile-menu-btn {
+            display: none !important;
+        }
     }
     .action-btn-gold {
         color: #fbbf24;
