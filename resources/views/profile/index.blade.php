@@ -1,31 +1,37 @@
 <!DOCTYPE html>
 <html lang="id" class="dark">
 <head>
-    <title>Pusat Sosial</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Pusat Sosial - Quiz Master</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script>tailwind.config = { darkMode: 'class' }</script>
+    <script>
+        tailwind.config = { darkMode: 'class' };
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
     <style>
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+        body { font-family: 'Poppins', sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(0,0,0,0.1); }
+        .dark .glass { background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.1); }
         .tab-active { background: rgba(236, 72, 153, 0.2); border-color: #ec4899; color: #ec4899; }
-        .tab-inactive { background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #94a3b8; }
-        .tab-inactive:hover { background: rgba(255, 255, 255, 0.1); color: white; }
+        .tab-inactive { background: rgba(0, 0, 0, 0.05); border-color: rgba(0, 0, 0, 0.1); color: #64748b; }
+        .dark .tab-inactive { background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #94a3b8; }
+        .tab-inactive:hover { background: rgba(0, 0, 0, 0.1); color: #0f172a; }
+        .dark .tab-inactive:hover { background: rgba(255, 255, 255, 0.1); color: white; }
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-slate-900 text-slate-800 dark:text-white min-h-screen font-sans transition-colors duration-300 flex flex-col">
 
-    <div class="p-4 border-b border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-50">
-        <div class="max-w-4xl mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">
-                <i class="fas fa-globe-asia mr-2"></i> Pusat Sosial
-            </h1>
-            <a href="{{ route('menu') }}" class="text-slate-500 hover:text-slate-800 dark:hover:text-white font-bold transition flex items-center gap-2">
-                <i class="fas fa-home"></i> <span class="hidden sm:inline">Menu Utama</span>
-            </a>
-        </div>
-    </div>
+    @include('partials.navbar')
 
-    <div class="max-w-4xl mx-auto p-4 w-full flex-grow">
+    <div class="max-w-4xl mx-auto p-4 w-full flex-grow pt-20">
         
         @if(session('success'))
             <div class="bg-green-500/20 text-green-600 dark:text-green-300 p-3 rounded-lg mb-4 text-sm text-center border border-green-500/30">
@@ -243,10 +249,6 @@
         }
         function closeDuelModal() {
             document.getElementById('duelModal').classList.add('hidden');
-        }
-
-        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
         }
     </script>
 </body>
