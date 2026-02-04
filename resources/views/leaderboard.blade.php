@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Papan Peringkat - Quiz Master</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -15,13 +16,17 @@
         }
     </script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+        body { font-family: 'Poppins', sans-serif; }
         .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(0,0,0,0.1); }
         .dark .glass { background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); }
     </style>
 </head>
-<body class="bg-gray-100 dark:bg-slate-900 text-slate-800 dark:text-white min-h-screen font-sans transition-colors duration-300">
+<body class="bg-gray-100 dark:bg-slate-900 text-slate-800 dark:text-white min-h-screen transition-colors duration-300">
 
-    <div class="container mx-auto px-4 py-8 max-w-4xl">
+    @include('partials.navbar')
+
+    <div class="container mx-auto px-4 py-8 pt-24 max-w-4xl">
         <div class="text-center mb-10">
             <h1 class="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-orange-500">
                 <i class="fas fa-trophy mr-2"></i> Papan Peringkat
@@ -82,12 +87,6 @@
                     @endforelse
                 </tbody>
             </table>
-        </div>
-
-        <div class="mt-8 text-center">
-            <a href="{{ route('menu') }}" class="inline-flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-full font-bold transition shadow-lg">
-                <i class="fas fa-arrow-left"></i> Kembali ke Menu
-            </a>
         </div>
     </div>
 

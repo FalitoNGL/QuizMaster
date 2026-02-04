@@ -36,49 +36,9 @@
     <div class="blob bg-cyan-600 w-96 h-96 rounded-full bottom-0 right-0 mix-blend-multiply animation-delay-2000 hidden dark:block"></div>
     <div class="blob bg-pink-600 w-80 h-80 rounded-full top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 mix-blend-multiply animation-delay-4000 hidden dark:block"></div>
 
-    <div class="absolute top-6 right-6 flex gap-3 z-50 items-center">
-        <button onclick="toggleTheme()" class="glass w-12 h-12 rounded-full flex items-center justify-center text-slate-600 dark:text-yellow-300 hover:bg-white/50 transition border border-gray-200 dark:border-white/10" title="Ganti Tema">
-            <i id="theme-icon" class="fas fa-moon"></i>
-        </button>
+    @include('partials.navbar')
 
-        @if(session('is_admin'))
-            <a href="{{ route('admin.dashboard') }}" class="glass w-12 h-12 rounded-full flex items-center justify-center text-yellow-500 dark:text-yellow-400 hover:bg-white/50 transition border border-yellow-500/30" title="Dashboard Admin">
-                <i class="fas fa-database"></i>
-            </a>
-        @endif
-
-        @auth
-            <div class="flex items-center gap-3 glass px-4 py-2 rounded-full border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-slate-800/50">
-                <a href="{{ route('profile.show', Auth::id()) }}" class="flex items-center gap-3 hover:opacity-80 transition group" title="Lihat Profil Saya">
-                    <img src="{{ Auth::user()->avatar ?? 'https://api.dicebear.com/7.x/avataaars/svg?seed='.Auth::user()->name }}" class="w-8 h-8 rounded-full border border-gray-300 dark:border-white bg-slate-200 dark:bg-slate-700">
-                    <div class="hidden md:block text-left">
-                        <div class="text-sm font-bold leading-none group-hover:text-blue-500 transition">{{ Str::limit(Auth::user()->name, 12) }}</div>
-                        <div class="text-[10px] text-slate-500 dark:text-slate-400 leading-none mt-1">{{ Auth::user()->title ?? 'Pemain' }}</div>
-                    </div>
-                </a>
-                <div class="h-6 w-px bg-slate-300 dark:bg-white/20 mx-1"></div>
-                <form action="{{ route('logout') }}" method="POST">
-                    @csrf
-                    <button type="submit" class="text-red-500 dark:text-red-400 hover:text-red-700 transition transform hover:scale-110" title="Keluar">
-                        <i class="fas fa-power-off"></i>
-                    </button>
-                </form>
-            </div>
-        @else
-            <a href="{{ route('login') }}" class="glass px-5 py-2 rounded-full font-bold text-sm hover:bg-white/50 transition border border-gray-200 dark:border-white/20 flex items-center gap-2">
-                <i class="fas fa-sign-in-alt"></i> Masuk
-            </a>
-            <a href="{{ route('admin.login') }}" class="glass w-10 h-10 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 transition hover:text-slate-800 dark:hover:text-white" title="Admin Login">
-                <i class="fas fa-lock text-xs"></i>
-            </a>
-        @endauth
-
-        <a href="{{ route('settings') }}" class="glass w-12 h-12 rounded-full flex items-center justify-center text-cyan-600 dark:text-cyan-400 hover:bg-white/50 transition hover:rotate-90 duration-300 border border-gray-200 dark:border-white/10" title="Pengaturan">
-            <i class="fas fa-cog text-xl"></i>
-        </a>
-    </div>
-
-    <div class="container mx-auto px-4 py-12 relative z-10">
+    <div class="container mx-auto px-4 py-12 pt-24 relative z-10">
         <div class="text-center mb-12">
             @php
                 $displayName = Auth::check() ? Auth::user()->name : (session('current_player') ?? 'Tamu');
@@ -98,40 +58,7 @@
             <p class="text-slate-500 dark:text-slate-400 mt-2 text-lg">Siap untuk menguji pengetahuanmu hari ini?</p>
         </div>
 
-        <div class="flex flex-wrap justify-center gap-4 mb-16">
-            <a href="{{ route('live.lobby') }}" class="glass px-6 py-3 rounded-full flex items-center gap-3 hover:bg-white/50 transition group border border-gray-200 dark:border-white/5 bg-white/50 dark:bg-transparent">
-                <div class="w-8 h-8 rounded-full bg-red-100 dark:bg-red-500/20 flex items-center justify-center text-red-600 dark:text-red-400 group-hover:scale-110 transition shadow-[0_0_15px_rgba(239,68,68,0.3)] animate-pulse">
-                    <i class="fas fa-gamepad"></i>
-                </div>
-                <span class="font-semibold text-slate-700 dark:text-slate-200">Live Duel</span>
-            </a>
-            <a href="{{ route('stats') }}" class="glass px-6 py-3 rounded-full flex items-center gap-3 hover:bg-white/50 transition group border border-gray-200 dark:border-white/5 bg-white/50 dark:bg-transparent">
-                <div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition shadow-[0_0_15px_rgba(59,130,246,0.3)]">
-                    <i class="fas fa-chart-pie"></i>
-                </div>
-                <span class="font-semibold text-slate-700 dark:text-slate-200">Statistik</span>
-            </a>
-            <a href="{{ route('achievements') }}" class="glass px-6 py-3 rounded-full flex items-center gap-3 hover:bg-white/50 transition group border border-gray-200 dark:border-white/5 bg-white/50 dark:bg-transparent">
-                <div class="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-500/20 flex items-center justify-center text-purple-600 dark:text-purple-400 group-hover:scale-110 transition shadow-[0_0_15px_rgba(168,85,247,0.3)]">
-                    <i class="fas fa-medal"></i>
-                </div>
-                <span class="font-semibold text-slate-700 dark:text-slate-200">Pencapaian</span>
-            </a>
-            <a href="{{ route('quiz.leaderboard') }}" class="glass px-6 py-3 rounded-full flex items-center gap-3 hover:bg-white/50 transition group border border-gray-200 dark:border-white/5 bg-white/50 dark:bg-transparent">
-                <div class="w-8 h-8 rounded-full bg-yellow-100 dark:bg-yellow-500/20 flex items-center justify-center text-yellow-600 dark:text-yellow-400 group-hover:scale-110 transition shadow-[0_0_15px_rgba(234,179,8,0.3)]">
-                    <i class="fas fa-trophy"></i>
-                </div>
-                <span class="font-semibold text-slate-700 dark:text-slate-200">Peringkat</span>
-            </a>
-            @auth
-            <a href="{{ route('social.index') }}" class="glass px-6 py-3 rounded-full flex items-center gap-3 hover:bg-white/50 transition group border border-gray-200 dark:border-white/5 bg-white/50 dark:bg-transparent">
-                <div class="w-8 h-8 rounded-full bg-pink-100 dark:bg-pink-500/20 flex items-center justify-center text-pink-600 dark:text-pink-400 group-hover:scale-110 transition shadow-[0_0_15px_rgba(236,72,153,0.3)]">
-                    <i class="fas fa-users"></i>
-                </div>
-                <span class="font-semibold text-slate-700 dark:text-slate-200">Sosial</span>
-            </a>
-            @endauth
-        </div>
+
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             @foreach($categories as $category)
@@ -259,27 +186,6 @@
             document.getElementById('setupModal').classList.remove('hidden');
         }
 
-        // Theme Logic
-        const htmlTag = document.documentElement;
-        const themeIcon = document.getElementById('theme-icon');
-        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            htmlTag.classList.add('dark');
-            themeIcon.classList.replace('fa-moon', 'fa-sun');
-        } else {
-            htmlTag.classList.remove('dark');
-            themeIcon.classList.replace('fa-sun', 'fa-moon');
-        }
-        function toggleTheme() {
-            if (htmlTag.classList.contains('dark')) {
-                htmlTag.classList.remove('dark');
-                localStorage.setItem('theme', 'light');
-                themeIcon.classList.replace('fa-sun', 'fa-moon');
-            } else {
-                htmlTag.classList.add('dark');
-                localStorage.setItem('theme', 'dark');
-                themeIcon.classList.replace('fa-moon', 'fa-sun');
-            }
-        }
 
         // WebSocket
         const userId = "{{ Auth::id() }}";
