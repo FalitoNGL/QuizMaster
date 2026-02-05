@@ -20,7 +20,7 @@
             
             <div class="relative group">
                 <div class="w-32 h-32 rounded-full border-4 border-blue-500 p-1 transition transform group-hover:scale-105">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ $playerName }}" alt="Avatar" class="w-full h-full rounded-full bg-gray-200 dark:bg-slate-700">
+                    <img src="https://api.dicebear.com/7.x/{{ session('avatar_style', 'avataaars') }}/svg?seed={{ $playerName }}" alt="Avatar" class="w-full h-full rounded-full bg-gray-200 dark:bg-slate-700">
                 </div>
                 <div class="absolute -bottom-2 -right-2 bg-yellow-500 text-slate-900 font-bold w-10 h-10 flex items-center justify-center rounded-full border-4 border-white dark:border-slate-900">
                     {{ $level }}

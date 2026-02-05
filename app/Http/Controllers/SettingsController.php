@@ -33,4 +33,34 @@ class SettingsController extends Controller
 
         return back()->with('success', "Berhasil menghapus $deleted data riwayat permainan Anda.");
     }
+
+    // Fungsi Update Profil Lengkap (Avatar Studio)
+    public function updateProfile(Request $request)
+    {
+        $request->validate([
+            'player_name' => 'required|string|max:50|alpha_dash',
+            'avatar_style' => 'required|string|in:avataaars,bottts,pixel-art,lorelei',
+            'bio' => 'nullable|string|max:100'
+        ]);
+
+        $oldName = session('current_player');
+        $newName = $request->player_name;
+
+        // Logic migrasi data jika ganti nama (Optional, bisa diaktifkan jika mau)
+        /*
+        if ($oldName && $oldName !== $newName) {
+            Result::where('player_name', $oldName)->update(['player_name' => $newName]);
+            DB::table('player_achievements')->where('player_name', $oldName)->update(['player_name' => $newName]);
+        }
+        */
+
+        // Simpan ke Session
+        session([
+            'current_player' => $newName,
+            'avatar_style' => $request->avatar_style,
+            'player_bio' => $request->bio
+        ]);
+
+        return back()->with('success', "Profil keren kamu sudah disimpan!");
+    }
 }

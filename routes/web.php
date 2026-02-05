@@ -31,6 +31,7 @@ Route::get('/achievements', [AchievementController::class, 'index'])->name('achi
 // Pengaturan
 Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
 Route::post('/settings/reset', [SettingsController::class, 'resetHistory'])->name('settings.reset');
+Route::post('/settings/profile', [SettingsController::class, 'updateProfile'])->name('settings.update-profile');
 
 // --- SOCIAL & PROFILE ROUTES ---
 // Halaman Utama Sosial (Hub) - Wajib Login

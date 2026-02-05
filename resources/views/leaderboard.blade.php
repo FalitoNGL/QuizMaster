@@ -54,18 +54,36 @@
                         </td>
                         
                         <td class="py-4 px-6">
-                            @if($score->user_id)
-                                <a href="{{ route('profile.show', $score->user_id) }}" class="font-bold text-lg text-blue-600 dark:text-blue-400 hover:underline decoration-dotted flex items-center gap-2 group" title="Lihat Profil">
-                                    {{ $score->player_name }}
-                                    <i class="fas fa-external-link-alt text-xs opacity-0 group-hover:opacity-100 transition"></i>
-                                </a>
-                            @else
-                                <div class="font-bold text-lg text-slate-600 dark:text-slate-300">
-                                    {{ $score->player_name }}
-                                    <span class="text-xs font-normal text-slate-400 border border-slate-400 rounded px-1 ml-2">Tamu</span>
+                            @php
+                                $isMe = session('current_player') === $score->player_name;
+                                $style = $isMe ? session('avatar_style', 'avataaars') : 'avataaars';
+                            @endphp
+                            
+                            <div class="flex items-center gap-3">
+                                <div class="relative">
+                                    <img src="https://api.dicebear.com/7.x/{{ $style }}/svg?seed={{ $score->player_name }}" class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 border {{ $isMe ? 'border-purple-500' : 'border-transparent' }}">
+                                    @if($isMe) <div class="absolute -bottom-1 -right-1 bg-purple-500 rounded-full w-3 h-3 border-2 border-white dark:border-slate-800"></div> @endif
                                 </div>
-                            @endif
-                            <div class="text-xs text-slate-500 mt-1">{{ $score->created_at->diffForHumans() }}</div>
+
+                                <div>
+                                    @if($score->user_id)
+                                        <a href="{{ route('profile.show', $score->user_id) }}" class="font-bold text-lg text-blue-600 dark:text-blue-400 hover:underline decoration-dotted flex items-center gap-2 group" title="Lihat Profil">
+                                            {{ $score->player_name }}
+                                            <i class="fas fa-external-link-alt text-xs opacity-0 group-hover:opacity-100 transition"></i>
+                                        </a>
+                                    @else
+                                        <div class="font-bold text-lg text-slate-600 dark:text-slate-300 flex items-center gap-2">
+                                            {{ $score->player_name }}
+                                            @if($isMe) 
+                                                <span class="text-[10px] bg-purple-500 text-white px-2 py-0.5 rounded-full uppercase tracking-wider">You</span>
+                                            @else
+                                                <span class="text-xs font-normal text-slate-400 border border-slate-400 rounded px-1">Tamu</span>
+                                            @endif
+                                        </div>
+                                    @endif
+                                    <div class="text-xs text-slate-500 mt-1">{{ $score->created_at->diffForHumans() }}</div>
+                                </div>
+                            </div>
                         </td>
 
                         <td class="py-4 px-6">
