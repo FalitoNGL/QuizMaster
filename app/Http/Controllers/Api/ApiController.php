@@ -135,4 +135,106 @@ class ApiController extends Controller
             'data' => $unlocked
         ]);
     }
+
+    /**
+     * POST /api/quiz/submit
+     * Menerima jawaban dari aplikasi Android dan menghitung skor di server.
+     * 
+     * Request Body:
+     * {
+     *   "player_name": "John",
+     *   "category_id": 1,
+     *   "answers": [
+     *     {"question_id": 1, "answer": 3, "time_left": 15},
+     *     {"question_id": 2, "answer": [1,3], "time_left": 10}
+     *   ]
+     * }
+     */
+    public function submit(Request $request)
+    {
+        // 1. Validasi Input
+        $data = $request->validate([
+            'player_name' => 'required|string|max:50|regex:/^[a-zA-Z0-9\s\-\_]+$/',
+            'category_id' => 'required|integer|exists:categories,id',
+            'answers' => 'required|array|min:1|max:100',
+            'answers.*.question_id' => 'required|integer|exists:questions,id',
+            'answers.*.answer' => 'present',
+            'answers.*.time_left' => 'nullable|integer|min:0|max:300',
+        ]);
+
+        $categoryId = $data['category_id'];
+        $playerName = $data['player_name'];
+
+        // 2. Validasi soal milik kategori yang diklaim
+        $questionIds = collect($data['answers'])->pluck('question_id')->unique();
+        $validCount = Question::whereIn('id', $questionIds)
+            ->where('category_id', $categoryId)
+            ->count();
+
+        if ($validCount !== $questionIds->count()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Soal tidak valid untuk kategori ini.'
+            ], 422);
+        }
+
+        // 3. Hitung Skor (Server-Side - Anti Cheat)
+        $calculatedScore = 0;
+        $correctCount = 0;
+        $totalQuestions = count($data['answers']);
+
+        foreach ($data['answers'] as $ans) {
+            $question = Question::with('options')->find($ans['question_id']);
+            if (!$question) continue;
+
+            $isCorrect = false;
+            $userAnswer = $ans['answer'] ?? null;
+            $timeLeft = min(max((int)($ans['time_left'] ?? 0), 0), 300);
+
+            // Single Choice
+            if ($question->type === 'single' && is_numeric($userAnswer)) {
+                $opt = $question->options->where('id', (int)$userAnswer)->first();
+                $isCorrect = $opt && $opt->is_correct;
+            }
+            // Multiple Choice
+            elseif ($question->type === 'multiple' && is_array($userAnswer)) {
+                $userIds = array_map('intval', $userAnswer);
+                $correctIds = $question->options->where('is_correct', 1)->pluck('id')->toArray();
+                sort($userIds);
+                sort($correctIds);
+                $isCorrect = $userIds == $correctIds;
+            }
+            // Ordering
+            elseif ($question->type === 'ordering' && is_array($userAnswer)) {
+                $userOrder = array_map('intval', $userAnswer);
+                $correctSeq = $question->options->sortBy('correct_order')->pluck('id')->toArray();
+                $isCorrect = array_values($userOrder) === array_values($correctSeq);
+            }
+
+            if ($isCorrect) {
+                $calculatedScore += 100 + $timeLeft;
+                $correctCount++;
+            }
+        }
+
+        // 4. Simpan Hasil
+        $result = new Result();
+        $result->user_id = null; // API tidak pakai auth untuk sementara
+        $result->player_name = $playerName;
+        $result->category_id = $categoryId;
+        $result->score = $calculatedScore;
+        $result->correct_answers = $correctCount;
+        $result->total_questions = $totalQuestions;
+        $result->save();
+
+        return response()->json([
+            'success' => true,
+            'result_id' => $result->id,
+            'player_name' => $playerName,
+            'score' => $calculatedScore,
+            'correct' => $correctCount,
+            'total' => $totalQuestions,
+            'accuracy' => $totalQuestions > 0 ? round(($correctCount / $totalQuestions) * 100, 1) : 0
+        ]);
+    }
 }
