@@ -6,8 +6,8 @@ Welcome to **QuizMaster**, a high-fidelity interactive quiz platform. This repos
 
 ## 🏗️ Project Structure
 
-- **[quiz-master-android/](file:///c:/xampp/htdocs/QuizMaster/quiz-master-android)**: Native Android application built with Kotlin and Jetpack Compose. Features a "Premium" Glassmorphism UI.
-- **[quiz-master-backend/](file:///c:/xampp/htdocs/QuizMaster/quiz-master-backend)**: Robust backend built with Laravel 11, supporting real-time duels, social features, and administrative dashboard.
+- **[quiz-master-mobile/](file:///c:/xampp/htdocs/QuizMaster/quiz-master-mobile)**: Native Android application built with Kotlin and Jetpack Compose. Features a "Premium" Glassmorphism UI.
+- **[quiz-master-web/](file:///c:/xampp/htdocs/QuizMaster/quiz-master-web)**: Robust backend built with Laravel 11, supporting real-time duels, social features, and administrative dashboard.
 
 ---
 
@@ -33,7 +33,7 @@ Welcome to **QuizMaster**, a high-fidelity interactive quiz platform. This repos
 
 ### 1. Setup Backend
 ```bash
-cd quiz-master-backend
+cd quiz-master-web
 composer install
 npm install
 cp .env.example .env
@@ -43,7 +43,7 @@ php artisan serve
 ```
 
 ### 2. Setup Android
-- Open `quiz-master-android` in Android Studio.
+- Open `quiz-master-mobile` in Android Studio.
 - Sync Gradle.
 - Update `RetrofitClient.kt` with your server IP.
 - Build & Run.
