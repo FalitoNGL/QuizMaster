@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="512dp"
+    android:height="512dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+    
+    <!-- Background Gradient -->
+    <path
+        android:pathData="M256 51.2 C142.8 51.2 51.2 142.8 51.2 256 C51.2 369.2 142.8 460.8 256 460.8 C307.2 460.8 353.8 441.9 389.6 410.6 L435.2 456.2 L460.8 430.6 L415.7 386.0 C447.0 350.2 466.4 305.2 466.4 256 C466.4 142.8 369.2 51.2 256 51.2 Z M256 128 C326.7 128 384 185.3 384 256 C384 326.7 326.7 384 256 384 C185.3 384 128 326.7 128 256 C128 185.3 185.3 128 256 128 Z">
+        <aapt:attr name="android:fillColor" xmlns:aapt="http://schemas.android.com/aapt">
+            <gradient android:startX="0" android:startY="0" android:endX="512" android:endY="512" android:type="linear">
+                <item android:offset="0" android:color="#FF3B82F6"/>
+                <item android:offset="1" android:color="#FF9333EA"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Brain Nodes (Combined for simplicity) -->
+    <path android:fillColor="#CC3B82F6" android:pathData="M256,256m-61.4,0a61.4,61.4 0,1 1,122.8 0a61.4,61.4 0,1 1,-122.8 0"/>
+    <path android:fillColor="#FFA78BFA" android:pathData="M256,256m-30.7,0a30.7,30.7 0,1 1,61.4 0a30.7,30.7 0,1 1,-61.4 0"/>
+
+    <!-- Connecting Nodes -->
+    <!-- Pink Node -->
+    <path android:fillColor="#FFEC4899" android:pathData="M179.2,204.8m-20.5,0a20.5,20.5 0,1 1,41 0a20.5,20.5 0,1 1,-41 0"/>
+    <path android:strokeColor="#80FFFFFF" android:strokeWidth="8" android:pathData="M179.2,204.8 L256,256"/>
+
+    <!-- Emerald Node -->
+    <path android:fillColor="#FF10B981" android:pathData="M332.8,204.8m-20.5,0a20.5,20.5 0,1 1,41 0a20.5,20.5 0,1 1,-41 0"/>
+    <path android:strokeColor="#80FFFFFF" android:strokeWidth="8" android:pathData="M332.8,204.8 L256,256"/>
+
+    <!-- Amber Node -->
+    <path android:fillColor="#FFFBBF24" android:pathData="M256,358.4m-20.5,0a20.5,20.5 0,1 1,41 0a20.5,20.5 0,1 1,-41 0"/>
+    <path android:strokeColor="#80FFFFFF" android:strokeWidth="8" android:pathData="M256,358.4 L256,256"/>
+
+</vector>

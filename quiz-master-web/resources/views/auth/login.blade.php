@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Quiz Master</title>
+    <title>Login - QuizMaster</title>
+    <link rel="icon" href="{{ asset('logo.svg') }}" type="image/svg+xml">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -22,8 +23,8 @@
 
     <div class="max-w-md w-full glass p-8 rounded-3xl shadow-2xl text-center border-t border-l border-white/10">
         
-        <div class="w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl mx-auto mb-6 flex items-center justify-center text-4xl shadow-lg transform rotate-3 hover:rotate-0 transition duration-300">
-            <i class="fas fa-brain text-white"></i>
+        <div class="w-24 h-24 mx-auto mb-6 flex items-center justify-center transform hover:scale-110 transition duration-300">
+            <img src="{{ asset('logo.svg') }}" alt="QuizMaster Logo" class="w-full h-full drop-shadow-2xl">
         </div>
 
         <h1 class="text-3xl font-bold mb-2">Selamat Datang!</h1>

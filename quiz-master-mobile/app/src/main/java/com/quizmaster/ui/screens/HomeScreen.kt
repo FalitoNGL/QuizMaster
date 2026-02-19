@@ -5,7 +5,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import com.quizmaster.R
+
+
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -30,13 +35,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.border
+import androidx.compose.material.icons.filled.*
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import com.quizmaster.data.model.Category
 import com.quizmaster.ui.components.GlassyCard
 import com.quizmaster.ui.components.ShimmerItem
-import com.quizmaster.ui.theme.BackgroundGradient
-import com.quizmaster.ui.theme.LaravelBlue
+import com.quizmaster.ui.theme.*
 import com.quizmaster.ui.viewmodel.AuthViewModel
 import com.quizmaster.ui.viewmodel.QuizViewModel
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -96,30 +107,72 @@ fun HomeScreen(
                     .fillMaxSize()
                     .padding(horizontal = 24.dp)
             ) {
-                // Header with user profile
+                // Brand Header (Added per user request)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 32.dp, bottom = 12.dp),
+                        .padding(top = 24.dp, bottom = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_logo_quantum),
+                        contentDescription = "QuizMaster Logo",
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "QuizMaster",
+                        color = Color.White.copy(alpha = 0.9f),
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+                }
+
+                // Header with user profile (Game Changer Upgrade)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp, bottom = 20.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "Hi, ${userProfile?.name?.split(" ")?.firstOrNull() ?: "Master"}",
+                                color = Color.White,
+                                fontSize = 28.sp,
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = (-1).sp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = "🔥", fontSize = 24.sp) // Streak Fire
+                        }
                         Text(
-                            text = "Hi, ${userProfile?.name ?: "Quiz Master"}",
-                            color = Color.White,
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = (-0.8).sp
-                        )
-                        Text(
-                            text = "Ready to boost your score?",
-                            color = Color.White.copy(alpha = 0.6f),
+                            text = "Let's crush some quizzes today! 🚀",
+                            color = Color.White.copy(alpha = 0.7f),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium
                         )
                     }
-
+                    
+                    // Profile Avatar Placeholder
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(Brush.linearGradient(listOf(LaravelBlue, LaravelPurple)))
+                            .border(2.dp, Color.White.copy(alpha = 0.2f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = userProfile?.name?.firstOrNull()?.toString() ?: "Q",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -153,16 +206,33 @@ fun HomeScreen(
                             columns = GridCells.Fixed(2),
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp),
-                            contentPadding = PaddingValues(bottom = 32.dp)
+                            contentPadding = PaddingValues(bottom = 100.dp) // Extra padding for bottom nav
                         ) {
-                            items(categories) { category ->
-                                HomeScreenCategoryCard(
-                                    category = category,
-                                    onClick = { 
-                                        selectedCategoryForSetup = category
-                                        showSetupDialog = true
+                            itemsIndexed(categories) { index, category ->
+                                // Staggered Animation State
+                                val alphaAnim = remember { Animatable(0f) }
+                                val slideAnim = remember { Animatable(50f) }
+                                
+                                LaunchedEffect(Unit) {
+                                    delay(index.toLong() * 80L) // Staggered delay
+                                    alphaAnim.animateTo(1f, animationSpec = tween(400))
+                                    slideAnim.animateTo(0f, animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow))
+                                }
+
+                                Box(
+                                    modifier = Modifier.graphicsLayer {
+                                        alpha = alphaAnim.value
+                                        translationY = slideAnim.value
                                     }
-                                )
+                                ) {
+                                    HomeScreenCategoryCard(
+                                        category = category,
+                                        onClick = { 
+                                            selectedCategoryForSetup = category
+                                            showSetupDialog = true
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
@@ -252,30 +322,36 @@ fun HomeScreenCategoryCard(
     category: Category,
     onClick: () -> Unit
 ) {
+    val theme = getCategoryTheme(category.name)
+
     GlassyCard(
         modifier = Modifier
             .fillMaxWidth()
-            .height(180.dp) // Uniform Height
+            .height(200.dp) // Tall, sleek cards
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(28.dp)
+        shape = RoundedCornerShape(32.dp),
+        containerColor = theme.color.copy(alpha = 0.05f), // Subtle tint
+        borderColor = theme.color.copy(alpha = 0.3f)
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.Start
         ) {
+            // Icon Bubble
             Box(
                 modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(LaravelBlue.copy(alpha = 0.1f)),
+                    .size(52.dp)
+                    .clip(CircleShape)
+                    .background(theme.color.copy(alpha = 0.15f))
+                    .border(1.dp, theme.color.copy(alpha = 0.3f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.PlayArrow,
+                    imageVector = theme.icon,
                     contentDescription = null,
-                    tint = LaravelBlue,
-                    modifier = Modifier.size(24.dp)
+                    tint = theme.color,
+                    modifier = Modifier.size(26.dp)
                 )
             }
             
@@ -283,21 +359,46 @@ fun HomeScreenCategoryCard(
                 Text(
                     text = category.name,
                     color = Color.White,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    lineHeight = 20.sp,
-                    maxLines = 2
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Black,
+                    lineHeight = 22.sp,
+                    maxLines = 2,
+                    letterSpacing = (-0.5).sp
                 )
                 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 
-                Text(
-                    text = "${category.questionsCount} Questions",
-                    color = Color.White.copy(alpha = 0.4f),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(theme.color)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "${category.questionsCount} Questions",
+                        color = Color.White.copy(alpha = 0.5f),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
+    }
+}
+
+// --- Helper for Dynamic Theming ---
+data class CategoryTheme(val color: Color, val icon: ImageVector)
+
+fun getCategoryTheme(name: String): CategoryTheme {
+    return when {
+        name.contains("Keamanan", ignoreCase = true) || name.contains("Security", ignoreCase = true) -> CategoryTheme(CatSecurity, Icons.Default.Security)
+        name.contains("Biologi", ignoreCase = true) || name.contains("Bio", ignoreCase = true) -> CategoryTheme(CatBio, Icons.Default.Eco)
+        name.contains("Elektronika", ignoreCase = true) || name.contains("Electro", ignoreCase = true) -> CategoryTheme(CatElectro, Icons.Default.Bolt)
+        name.contains("Sandi", ignoreCase = true) || name.contains("Code", ignoreCase = true) || name.contains("Pemrograman", ignoreCase = true) -> CategoryTheme(CatCode, Icons.Default.Code)
+        name.contains("Intelijen", ignoreCase = true) || name.contains("Brain", ignoreCase = true) -> CategoryTheme(CatIntel, Icons.Default.Psychology)
+        name.contains("Jaringan", ignoreCase = true) || name.contains("Network", ignoreCase = true) -> CategoryTheme(CatGeneral, Icons.Default.Hub)
+        else -> CategoryTheme(CatGeneral, Icons.Default.School) // Fallback
     }
 }

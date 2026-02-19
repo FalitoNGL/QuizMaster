@@ -2,6 +2,7 @@
 <html lang="id">
 <head>
     <title>Tambah Soal Baru</title>
+    <link rel="icon" href="{{ asset('logo.svg') }}" type="image/svg+xml">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>

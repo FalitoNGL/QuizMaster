@@ -32,6 +32,14 @@ val SuccessGreen = Color(0xFF22C55E) // Green-500
 val ErrorRed = Color(0xFFEF4444) // Red-500
 val WarningYellow = Color(0xFFF59E0B) // Amber-500
 
+// Category Theme Colors (Game Changer)
+val CatSecurity = Color(0xFF10B981) // Emerald-500
+val CatBio = Color(0xFFEC4899) // Pink-500
+val CatElectro = Color(0xFFF59E0B) // Amber-500
+val CatCode = Color(0xFF3B82F6) // Blue-500
+val CatIntel = Color(0xFF8B5CF6) // Violet-500
+val CatGeneral = Color(0xFF06B6D4) // Cyan-500
+
 // Shared Brushes
 val MeshGradient = androidx.compose.ui.graphics.Brush.linearGradient(
     colors = listOf(LaravelBlue, LaravelPurple)

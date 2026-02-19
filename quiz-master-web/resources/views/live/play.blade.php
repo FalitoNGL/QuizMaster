@@ -2,6 +2,7 @@
 <html lang="id" class="dark">
 <head>
     <title>LIVE DUEL - {{ $room->room_code }}</title>
+    <link rel="icon" href="{{ asset('logo.svg') }}" type="image/svg+xml">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">

@@ -1,4 +1,4 @@
-# 🎮 QuizMaster Monorepo by FalitoNGL
+# QuizMaster <img src="logo.svg" align="right" width="120" />
 
 Welcome to **QuizMaster**, a high-fidelity interactive quiz platform. This repository is a unified monorepo containing both the **Android Mobile App** and the **Laravel Backend Service**.
 

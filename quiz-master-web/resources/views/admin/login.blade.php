@@ -2,6 +2,7 @@
 <html lang="id">
 <head>
     <title>Login Admin</title>
+    <link rel="icon" href="{{ asset('logo.svg') }}" type="image/svg+xml">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex items-center justify-center">

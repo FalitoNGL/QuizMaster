@@ -17,6 +17,9 @@ import com.quizmaster.ui.components.GlassyCard
 import com.quizmaster.ui.components.PremiumButton
 import com.quizmaster.ui.theme.BackgroundGradient
 import com.quizmaster.ui.viewmodel.AuthViewModel
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import com.quizmaster.R
 
 @Composable
 fun RegisterScreen(
@@ -50,6 +53,14 @@ fun RegisterScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Image(
+                painter = painterResource(id = R.drawable.ic_logo_quantum),
+                contentDescription = "QuizMaster Logo",
+                modifier = Modifier
+                    .size(100.dp)
+                    .padding(bottom = 16.dp)
+            )
+
             Text(
                 text = "Join the Arena",
                 color = Color.White,

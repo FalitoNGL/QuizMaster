@@ -24,6 +24,7 @@ import com.quizmaster.ui.screens.LoginScreen
 import com.quizmaster.ui.screens.QuizScreen
 import com.quizmaster.ui.screens.RegisterScreen
 import com.quizmaster.ui.screens.ResultScreen
+import com.quizmaster.ui.screens.SplashScreen
 import com.quizmaster.ui.viewmodel.AuthViewModel
 import com.quizmaster.ui.viewmodel.LeaderboardViewModel
 import com.quizmaster.ui.viewmodel.QuizViewModel
@@ -36,6 +37,7 @@ import com.quizmaster.ui.screens.StatsScreen
 sealed class Screen(val route: String, val icon: ImageVector? = null) {
     object Login : Screen("login")
     object Register : Screen("register")
+    object Splash : Screen("splash")
     object Home : Screen("home", Icons.Default.Home)
     object Quiz : Screen("quiz")
     object Result : Screen("result")
@@ -77,9 +79,13 @@ fun QuizNavHost(
         ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Login.route,
+            startDestination = Screen.Splash.route,
             modifier = Modifier.padding(innerPadding)
         ) {
+            composable(Screen.Splash.route) {
+                SplashScreen(navController = navController, authViewModel = authViewModel)
+            }
+
             // Auth Screens
             composable(Screen.Login.route) {
                 LoginScreen(navController = navController, viewModel = authViewModel)

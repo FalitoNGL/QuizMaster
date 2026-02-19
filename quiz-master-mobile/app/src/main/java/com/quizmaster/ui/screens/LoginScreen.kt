@@ -15,8 +15,10 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.quizmaster.ui.components.GlassyCard
 import com.quizmaster.ui.components.PremiumButton
-import com.quizmaster.ui.theme.BackgroundGradient
 import com.quizmaster.ui.viewmodel.AuthViewModel
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import com.quizmaster.R
 
 @Composable
 fun LoginScreen(
@@ -48,6 +50,14 @@ fun LoginScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Image(
+                painter = painterResource(id = R.drawable.ic_logo_quantum),
+                contentDescription = "QuizMaster Logo",
+                modifier = Modifier
+                    .size(120.dp)
+                    .padding(bottom = 24.dp)
+            )
+            
             Text(
                 text = "Welcome Back!",
                 color = Color.White,

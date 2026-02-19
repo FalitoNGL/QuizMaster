@@ -8,8 +8,8 @@
                 
                 {{-- Logo & Brand --}}
                 <a href="{{ route('menu') }}" class="flex items-center gap-3 group">
-                    <div class="logo-icon">
-                        <i class="fas fa-brain text-white text-lg"></i>
+                    <div class="w-10 h-10 hover:scale-110 transition-transform duration-300">
+                        <img src="{{ asset('logo.svg') }}" alt="QM" class="w-full h-full">
                     </div>
                     <span class="font-bold text-xl hidden sm:block">
                         <span class="text-white">Quiz</span><span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">Master</span>
