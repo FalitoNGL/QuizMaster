@@ -1,0 +1,39 @@
+# Android
+.gradle/
+local.properties
+.idea/
+build/
+app/build/
+*.iml
+*.log
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+output.json
+
+# Laravel
+/vendor/
+node_modules/
+public/storage
+public/hot
+storage/*.key
+.env
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+auth.json
+npm-debug.log
+yarn-error.log
+/.phpunit.cache
+/.vscode/
+.php_cs.cache
+.php-cs-fixer.cache
+
+# Misc
+.DS_Store
+# Logs and Text Files
+*.log
+*.txt
+!README.md
+!quiz-master-android/README.md
