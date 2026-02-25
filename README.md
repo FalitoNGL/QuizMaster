@@ -80,7 +80,7 @@ Pengembangan proyek ini mengikuti metodologi **Waterfall** yang terstruktur seca
 
 ## 👨‍💻 Profil Pengembang
 - **Nama:** Falito Eriano Nainggolan
-- **NIM:** 2423102023
+- **NPM:** 2423102023
 - **Program Studi:** Rekayasa Keamanan Siber
 - **Institusi:** Politeknik Siber dan Sandi Negara
 - **Tahun Akademik:** 2025/2026
